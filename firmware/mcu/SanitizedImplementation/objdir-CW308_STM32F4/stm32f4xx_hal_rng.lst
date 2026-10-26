@@ -1,0 +1,1308 @@
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"stm32f4xx_hal_rng.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c"
+  18              		.section	.text.HAL_RNG_MspInit,"ax",%progbits
+  19              		.align	1
+  20              		.weak	HAL_RNG_MspInit
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	HAL_RNG_MspInit:
+  26              	.LVL0:
+  27              	.LFB128:
+   1:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+   2:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   ******************************************************************************
+   3:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @file    stm32f4xx_hal_rng.c
+   4:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @author  MCD Application Team
+   5:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @version V1.7.1
+   6:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @date    14-April-2017
+   7:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief   RNG HAL module driver.
+   8:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *          This file provides firmware functions to manage the following 
+   9:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *          functionalities of the Random Number Generator (RNG) peripheral:
+  10:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *           + Initialization/de-initialization functions
+  11:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *           + Peripheral Control functions 
+  12:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *           + Peripheral State functions
+  13:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         
+  14:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   @verbatim
+  15:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   ==============================================================================
+  16:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****                      ##### How to use this driver #####
+  17:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   ==============================================================================
+  18:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   [..]
+  19:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       The RNG HAL driver can be used as follows:
+  20:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  21:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (#) Enable the RNG controller clock using __HAL_RCC_RNG_CLK_ENABLE() macro 
+  22:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****           in HAL_RNG_MspInit().
+  23:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (#) Activate the RNG peripheral using HAL_RNG_Init() function.
+  24:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (#) Wait until the 32 bit Random Number Generator contains a valid 
+  25:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****           random data using (polling/interrupt) mode.   
+  26:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (#) Get the 32 bit random number using HAL_RNG_GenerateRandomNumber() function.
+  27:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  28:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   @endverbatim
+  29:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   ******************************************************************************
+  30:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @attention
+  31:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *
+  32:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * <h2><center>&copy; COPYRIGHT(c) 2017 STMicroelectronics</center></h2>
+  33:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *
+  34:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * Redistribution and use in source and binary forms, with or without modification,
+  35:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * are permitted provided that the following conditions are met:
+  36:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *   1. Redistributions of source code must retain the above copyright notice,
+  37:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *      this list of conditions and the following disclaimer.
+  38:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *   2. Redistributions in binary form must reproduce the above copyright notice,
+  39:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *      this list of conditions and the following disclaimer in the documentation
+  40:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *      and/or other materials provided with the distribution.
+  41:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *   3. Neither the name of STMicroelectronics nor the names of its contributors
+  42:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *      may be used to endorse or promote products derived from this software
+  43:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *      without specific prior written permission.
+  44:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *
+  45:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+  46:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+  47:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+  48:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+  49:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+  50:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+  51:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+  52:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+  53:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  54:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  55:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *
+  56:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   ******************************************************************************
+  57:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */ 
+  58:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  59:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Includes ------------------------------------------------------------------*/
+  60:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** //#include "stm32f4xx_hal.h"
+  61:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** #include "stm32f4xx_hal_rng.h"
+  62:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  63:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup STM32F4xx_HAL_Driver
+  64:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+  65:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+  66:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  67:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup RNG 
+  68:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+  69:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+  70:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  71:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** //#ifdef HAL_RNG_MODULE_ENABLED
+  72:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  73:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** #if defined(STM32F405xx) || defined(STM32F415xx) || defined(STM32F407xx) || defined(STM32F417xx) ||
+  74:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     defined(STM32F427xx) || defined(STM32F437xx) || defined(STM32F429xx) || defined(STM32F439xx) ||
+  75:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     defined(STM32F410Tx) || defined(STM32F410Cx) || defined(STM32F410Rx) || defined(STM32F469xx) ||
+  76:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     defined(STM32F479xx) || defined(STM32F412Zx) || defined(STM32F412Vx) || defined(STM32F412Rx) ||
+  77:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     defined(STM32F412Cx) || defined(STM32F413xx) || defined(STM32F423xx)
+  78:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  79:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  80:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private types -------------------------------------------------------------*/
+  81:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private defines -----------------------------------------------------------*/
+  82:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private variables ---------------------------------------------------------*/
+  83:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private constants ---------------------------------------------------------*/
+  84:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup RNG_Private_Constants
+  85:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+  86:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+  87:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** #define RNG_TIMEOUT_VALUE     2U
+  88:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+  89:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @}
+  90:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */ 
+  91:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private macros ------------------------------------------------------------*/
+  92:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private functions prototypes ----------------------------------------------*/
+  93:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Private functions ---------------------------------------------------------*/
+  94:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /* Exported functions --------------------------------------------------------*/
+  95:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  96:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup RNG_Exported_Functions
+  97:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+  98:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+  99:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 100:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup RNG_Exported_Functions_Group1
+ 101:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  *  @brief   Initialization and de-initialization functions
+ 102:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  *
+ 103:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** @verbatim
+ 104:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  ===============================================================================
+ 105:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****           ##### Initialization and de-initialization functions #####
+ 106:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  ===============================================================================
+ 107:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     [..]  This section provides functions allowing to:
+ 108:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) Initialize the RNG according to the specified parameters 
+ 109:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****           in the RNG_InitTypeDef and create the associated handle
+ 110:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) DeInitialize the RNG peripheral
+ 111:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) Initialize the RNG MSP
+ 112:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) DeInitialize RNG MSP 
+ 113:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 114:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** @endverbatim
+ 115:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+ 116:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 117:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 118:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 119:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Initializes the RNG peripheral and creates the associated handle.
+ 120:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 121:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 122:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval HAL status
+ 123:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 124:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** HAL_StatusTypeDef HAL_RNG_Init(RNG_HandleTypeDef *hrng)
+ 125:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** { 
+ 126:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check the RNG handle allocation */
+ 127:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(hrng == NULL)
+ 128:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 129:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     return HAL_ERROR;
+ 130:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 131:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_LOCK(hrng);
+ 133:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 134:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(hrng->State == HAL_RNG_STATE_RESET)
+ 135:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {  
+ 136:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Allocate lock resource and initialize it */
+ 137:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->Lock = HAL_UNLOCKED;
+ 138:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Init the low level hardware */
+ 139:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     HAL_RNG_MspInit(hrng);
+ 140:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 141:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 142:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Change RNG peripheral state */
+ 143:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   hrng->State = HAL_RNG_STATE_BUSY;
+ 144:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 145:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Enable the RNG Peripheral */
+ 146:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_RNG_ENABLE(hrng);
+ 147:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 148:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Initialize the RNG state */
+ 149:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   hrng->State = HAL_RNG_STATE_READY;
+ 150:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 151:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_UNLOCK(hrng);
+ 152:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 153:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Return function status */
+ 154:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return HAL_OK;
+ 155:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 156:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 157:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 158:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  DeInitializes the RNG peripheral. 
+ 159:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 160:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 161:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval HAL status
+ 162:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 163:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** HAL_StatusTypeDef HAL_RNG_DeInit(RNG_HandleTypeDef *hrng)
+ 164:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** { 
+ 165:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check the RNG handle allocation */
+ 166:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(hrng == NULL)
+ 167:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 168:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     return HAL_ERROR;
+ 169:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 170:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Disable the RNG Peripheral */
+ 171:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   CLEAR_BIT(hrng->Instance->CR, RNG_CR_IE | RNG_CR_RNGEN);
+ 172:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 173:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Clear RNG interrupt status flags */
+ 174:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   CLEAR_BIT(hrng->Instance->SR, RNG_SR_CEIS | RNG_SR_SEIS);
+ 175:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 176:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* DeInit the low level hardware */
+ 177:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   HAL_RNG_MspDeInit(hrng);
+ 178:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 179:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Update the RNG state */
+ 180:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   hrng->State = HAL_RNG_STATE_RESET; 
+ 181:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 182:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Release Lock */
+ 183:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_UNLOCK(hrng);
+ 184:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 185:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Return the function status */
+ 186:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return HAL_OK;
+ 187:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 188:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 189:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 190:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Initializes the RNG MSP.
+ 191:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 192:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 193:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval None
+ 194:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 195:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** __weak void HAL_RNG_MspInit(RNG_HandleTypeDef *hrng)
+ 196:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+  28              		.loc 1 196 1 view -0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              		@ link register save eliminated.
+ 197:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Prevent unused argument(s) compilation warning */
+ 198:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   UNUSED(hrng);
+  33              		.loc 1 198 3 view .LVU1
+ 199:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* NOTE : This function should not be modified. When the callback is needed,
+ 200:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****             function HAL_RNG_MspInit must be implemented in the user file.
+ 201:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****    */
+ 202:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+  34              		.loc 1 202 1 is_stmt 0 view .LVU2
+  35 0000 7047     		bx	lr
+  36              		.cfi_endproc
+  37              	.LFE128:
+  39              		.section	.text.HAL_RNG_Init,"ax",%progbits
+  40              		.align	1
+  41              		.global	HAL_RNG_Init
+  42              		.syntax unified
+  43              		.thumb
+  44              		.thumb_func
+  46              	HAL_RNG_Init:
+  47              	.LVL1:
+  48              	.LFB126:
+ 125:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check the RNG handle allocation */
+  49              		.loc 1 125 1 is_stmt 1 view -0
+  50              		.cfi_startproc
+  51              		@ args = 0, pretend = 0, frame = 0
+  52              		@ frame_needed = 0, uses_anonymous_args = 0
+ 127:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+  53              		.loc 1 127 3 view .LVU4
+ 125:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check the RNG handle allocation */
+  54              		.loc 1 125 1 is_stmt 0 view .LVU5
+  55 0000 10B5     		push	{r4, lr}
+  56              	.LCFI0:
+  57              		.cfi_def_cfa_offset 8
+  58              		.cfi_offset 4, -8
+  59              		.cfi_offset 14, -4
+ 127:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+  60              		.loc 1 127 5 view .LVU6
+  61 0002 0446     		mov	r4, r0
+  62 0004 A8B1     		cbz	r0, .L5
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  63              		.loc 1 132 3 is_stmt 1 view .LVU7
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  64              		.loc 1 132 3 view .LVU8
+  65 0006 0379     		ldrb	r3, [r0, #4]	@ zero_extendqisi2
+  66 0008 012B     		cmp	r3, #1
+  67 000a 14D0     		beq	.L6
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  68              		.loc 1 132 3 discriminator 2 view .LVU9
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  69              		.loc 1 132 3 discriminator 2 view .LVU10
+ 134:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {  
+  70              		.loc 1 134 3 view .LVU11
+ 134:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {  
+  71              		.loc 1 134 10 is_stmt 0 view .LVU12
+  72 000c 4379     		ldrb	r3, [r0, #5]	@ zero_extendqisi2
+ 134:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {  
+  73              		.loc 1 134 5 view .LVU13
+  74 000e 03F0FF02 		and	r2, r3, #255
+  75 0012 13B9     		cbnz	r3, .L4
+ 137:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Init the low level hardware */
+  76              		.loc 1 137 5 is_stmt 1 view .LVU14
+ 137:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Init the low level hardware */
+  77              		.loc 1 137 16 is_stmt 0 view .LVU15
+  78 0014 0271     		strb	r2, [r0, #4]
+ 139:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+  79              		.loc 1 139 5 is_stmt 1 view .LVU16
+  80 0016 FFF7FEFF 		bl	HAL_RNG_MspInit
+  81              	.LVL2:
+  82              	.L4:
+ 143:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  83              		.loc 1 143 3 view .LVU17
+ 146:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  84              		.loc 1 146 3 is_stmt 0 view .LVU18
+  85 001a 2268     		ldr	r2, [r4]
+ 143:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  86              		.loc 1 143 15 view .LVU19
+  87 001c 0223     		movs	r3, #2
+  88 001e 6371     		strb	r3, [r4, #5]
+ 146:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+  89              		.loc 1 146 3 is_stmt 1 view .LVU20
+  90 0020 1368     		ldr	r3, [r2]
+  91 0022 43F00403 		orr	r3, r3, #4
+  92 0026 1360     		str	r3, [r2]
+ 149:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  93              		.loc 1 149 3 view .LVU21
+ 151:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  94              		.loc 1 151 3 is_stmt 0 view .LVU22
+  95 0028 0020     		movs	r0, #0
+ 149:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  96              		.loc 1 149 15 view .LVU23
+  97 002a 0123     		movs	r3, #1
+  98 002c 6371     		strb	r3, [r4, #5]
+ 151:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+  99              		.loc 1 151 3 is_stmt 1 view .LVU24
+ 151:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 100              		.loc 1 151 3 view .LVU25
+ 101 002e 2071     		strb	r0, [r4, #4]
+ 151:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 102              		.loc 1 151 3 view .LVU26
+ 154:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 103              		.loc 1 154 3 view .LVU27
+ 104              	.L3:
+ 155:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 105              		.loc 1 155 1 is_stmt 0 view .LVU28
+ 106 0030 10BD     		pop	{r4, pc}
+ 107              	.LVL3:
+ 108              	.L5:
+ 129:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 109              		.loc 1 129 12 view .LVU29
+ 110 0032 0120     		movs	r0, #1
+ 111              	.LVL4:
+ 129:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 112              		.loc 1 129 12 view .LVU30
+ 113 0034 FCE7     		b	.L3
+ 114              	.LVL5:
+ 115              	.L6:
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 116              		.loc 1 132 3 discriminator 1 view .LVU31
+ 117 0036 0220     		movs	r0, #2
+ 118              	.LVL6:
+ 132:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 119              		.loc 1 132 3 discriminator 1 view .LVU32
+ 120 0038 FAE7     		b	.L3
+ 121              		.cfi_endproc
+ 122              	.LFE126:
+ 124              		.section	.text.HAL_RNG_MspDeInit,"ax",%progbits
+ 125              		.align	1
+ 126              		.weak	HAL_RNG_MspDeInit
+ 127              		.syntax unified
+ 128              		.thumb
+ 129              		.thumb_func
+ 131              	HAL_RNG_MspDeInit:
+ 132              	.LFB140:
+ 133              		.cfi_startproc
+ 203:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 204:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 205:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  DeInitializes the RNG MSP.
+ 206:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 207:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 208:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval None
+ 209:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 210:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** __weak void HAL_RNG_MspDeInit(RNG_HandleTypeDef *hrng)
+ 134              		.loc 1 210 13 is_stmt 1 view -0
+ 135              		@ args = 0, pretend = 0, frame = 0
+ 136              		@ frame_needed = 0, uses_anonymous_args = 0
+ 137              		@ link register save eliminated.
+ 138 0000 7047     		bx	lr
+ 139              		.cfi_endproc
+ 140              	.LFE140:
+ 142              		.section	.text.HAL_RNG_DeInit,"ax",%progbits
+ 143              		.align	1
+ 144              		.global	HAL_RNG_DeInit
+ 145              		.syntax unified
+ 146              		.thumb
+ 147              		.thumb_func
+ 149              	HAL_RNG_DeInit:
+ 150              	.LVL7:
+ 151              	.LFB127:
+ 164:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check the RNG handle allocation */
+ 152              		.loc 1 164 1 view -0
+ 153              		.cfi_startproc
+ 154              		@ args = 0, pretend = 0, frame = 0
+ 155              		@ frame_needed = 0, uses_anonymous_args = 0
+ 166:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 156              		.loc 1 166 3 view .LVU35
+ 164:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check the RNG handle allocation */
+ 157              		.loc 1 164 1 is_stmt 0 view .LVU36
+ 158 0000 10B5     		push	{r4, lr}
+ 159              	.LCFI1:
+ 160              		.cfi_def_cfa_offset 8
+ 161              		.cfi_offset 4, -8
+ 162              		.cfi_offset 14, -4
+ 166:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 163              		.loc 1 166 5 view .LVU37
+ 164 0002 0446     		mov	r4, r0
+ 165 0004 70B1     		cbz	r0, .L10
+ 171:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 166              		.loc 1 171 3 is_stmt 1 view .LVU38
+ 167 0006 0368     		ldr	r3, [r0]
+ 168 0008 1A68     		ldr	r2, [r3]
+ 169 000a 22F00C02 		bic	r2, r2, #12
+ 170 000e 1A60     		str	r2, [r3]
+ 174:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 171              		.loc 1 174 3 view .LVU39
+ 172 0010 5A68     		ldr	r2, [r3, #4]
+ 173 0012 22F06002 		bic	r2, r2, #96
+ 174 0016 5A60     		str	r2, [r3, #4]
+ 177:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 175              		.loc 1 177 3 view .LVU40
+ 176 0018 FFF7FEFF 		bl	HAL_RNG_MspDeInit
+ 177              	.LVL8:
+ 180:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 178              		.loc 1 180 3 view .LVU41
+ 180:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 179              		.loc 1 180 15 is_stmt 0 view .LVU42
+ 180 001c 0020     		movs	r0, #0
+ 181 001e 6071     		strb	r0, [r4, #5]
+ 183:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 182              		.loc 1 183 3 is_stmt 1 view .LVU43
+ 183:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 183              		.loc 1 183 3 view .LVU44
+ 184 0020 2071     		strb	r0, [r4, #4]
+ 183:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 185              		.loc 1 183 3 view .LVU45
+ 186:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 186              		.loc 1 186 3 view .LVU46
+ 187              	.L9:
+ 187:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 188              		.loc 1 187 1 is_stmt 0 view .LVU47
+ 189 0022 10BD     		pop	{r4, pc}
+ 190              	.LVL9:
+ 191              	.L10:
+ 168:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 192              		.loc 1 168 12 view .LVU48
+ 193 0024 0120     		movs	r0, #1
+ 194              	.LVL10:
+ 168:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 195              		.loc 1 168 12 view .LVU49
+ 196 0026 FCE7     		b	.L9
+ 197              		.cfi_endproc
+ 198              	.LFE127:
+ 200              		.section	.text.HAL_RNG_GenerateRandomNumber,"ax",%progbits
+ 201              		.align	1
+ 202              		.global	HAL_RNG_GenerateRandomNumber
+ 203              		.syntax unified
+ 204              		.thumb
+ 205              		.thumb_func
+ 207              	HAL_RNG_GenerateRandomNumber:
+ 208              	.LVL11:
+ 209              	.LFB130:
+ 211:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 212:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Prevent unused argument(s) compilation warning */
+ 213:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   UNUSED(hrng);
+ 214:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* NOTE : This function should not be modified. When the callback is needed,
+ 215:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****             function HAL_RNG_MspDeInit must be implemented in the user file.
+ 216:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****    */
+ 217:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 218:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 219:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 220:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @}
+ 221:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 222:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 223:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup RNG_Exported_Functions_Group2
+ 224:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  *  @brief   Peripheral Control functions 
+ 225:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  *
+ 226:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** @verbatim   
+ 227:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  ===============================================================================
+ 228:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****                       ##### Peripheral Control functions #####
+ 229:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  ===============================================================================  
+ 230:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     [..]  This section provides functions allowing to:
+ 231:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) Get the 32 bit Random number
+ 232:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) Get the 32 bit Random number with interrupt enabled
+ 233:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       (+) Handle RNG interrupt request 
+ 234:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 235:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** @endverbatim
+ 236:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+ 237:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 238:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****    
+ 239:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 240:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Generates a 32-bit random number.
+ 241:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @note   Each time the random number data is read the RNG_FLAG_DRDY flag 
+ 242:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         is automatically cleared.
+ 243:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 244:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 245:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  random32bit: pointer to generated random number variable if successful.
+ 246:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval HAL status
+ 247:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 248:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 249:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** HAL_StatusTypeDef HAL_RNG_GenerateRandomNumber(RNG_HandleTypeDef *hrng, uint32_t *random32bit)
+ 250:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 210              		.loc 1 250 1 is_stmt 1 view -0
+ 211              		.cfi_startproc
+ 212              		@ args = 0, pretend = 0, frame = 0
+ 213              		@ frame_needed = 0, uses_anonymous_args = 0
+ 251:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   uint32_t tickstart = 0U;    
+ 214              		.loc 1 251 3 view .LVU51
+ 252:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   HAL_StatusTypeDef status = HAL_OK;
+ 215              		.loc 1 252 3 view .LVU52
+ 253:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 254:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Process Locked */
+ 255:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_LOCK(hrng); 
+ 216              		.loc 1 255 3 view .LVU53
+ 217              		.loc 1 255 3 view .LVU54
+ 250:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   uint32_t tickstart = 0U;    
+ 218              		.loc 1 250 1 is_stmt 0 view .LVU55
+ 219 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 220              	.LCFI2:
+ 221              		.cfi_def_cfa_offset 24
+ 222              		.cfi_offset 3, -24
+ 223              		.cfi_offset 4, -20
+ 224              		.cfi_offset 5, -16
+ 225              		.cfi_offset 6, -12
+ 226              		.cfi_offset 7, -8
+ 227              		.cfi_offset 14, -4
+ 228              		.loc 1 255 3 view .LVU56
+ 229 0002 0379     		ldrb	r3, [r0, #4]	@ zero_extendqisi2
+ 230 0004 012B     		cmp	r3, #1
+ 250:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   uint32_t tickstart = 0U;    
+ 231              		.loc 1 250 1 view .LVU57
+ 232 0006 0446     		mov	r4, r0
+ 233 0008 0E46     		mov	r6, r1
+ 234              		.loc 1 255 3 view .LVU58
+ 235 000a 21D0     		beq	.L16
+ 236              		.loc 1 255 3 is_stmt 1 discriminator 2 view .LVU59
+ 256:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 257:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check RNG peripheral state */
+ 258:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(hrng->State == HAL_RNG_STATE_READY)
+ 237              		.loc 1 258 10 is_stmt 0 view .LVU60
+ 238 000c 6379     		ldrb	r3, [r4, #5]	@ zero_extendqisi2
+ 255:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 239              		.loc 1 255 3 discriminator 2 view .LVU61
+ 240 000e 0120     		movs	r0, #1
+ 241              	.LVL12:
+ 242              		.loc 1 258 5 view .LVU62
+ 243 0010 8342     		cmp	r3, r0
+ 255:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 244              		.loc 1 255 3 discriminator 2 view .LVU63
+ 245 0012 2071     		strb	r0, [r4, #4]
+ 255:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 246              		.loc 1 255 3 is_stmt 1 discriminator 2 view .LVU64
+ 247              		.loc 1 258 3 view .LVU65
+ 248              		.loc 1 258 5 is_stmt 0 view .LVU66
+ 249 0014 0FD1     		bne	.L13
+ 250              	.LBB2:
+ 259:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 260:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Change RNG peripheral state */  
+ 261:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->State = HAL_RNG_STATE_BUSY;  
+ 251              		.loc 1 261 5 is_stmt 1 view .LVU67
+ 252              		.loc 1 261 17 is_stmt 0 view .LVU68
+ 253 0016 0223     		movs	r3, #2
+ 254 0018 6371     		strb	r3, [r4, #5]
+ 262:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 263:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Get tick */
+ 264:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     tickstart = HAL_GetTick();
+ 255              		.loc 1 264 5 is_stmt 1 view .LVU69
+ 256              		.loc 1 264 17 is_stmt 0 view .LVU70
+ 257 001a FFF7FEFF 		bl	HAL_GetTick
+ 258              	.LVL13:
+ 259              		.loc 1 264 17 view .LVU71
+ 260 001e 0746     		mov	r7, r0
+ 261              	.LVL14:
+ 265:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 266:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Check if data register contains valid random data */
+ 267:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     while(__HAL_RNG_GET_FLAG(hrng, RNG_FLAG_DRDY) == RESET)
+ 262              		.loc 1 267 5 is_stmt 1 view .LVU72
+ 263              	.L14:
+ 264              		.loc 1 267 51 view .LVU73
+ 265              		.loc 1 267 11 is_stmt 0 view .LVU74
+ 266 0020 2268     		ldr	r2, [r4]
+ 267 0022 5568     		ldr	r5, [r2, #4]
+ 268              		.loc 1 267 51 view .LVU75
+ 269 0024 15F00105 		ands	r5, r5, #1
+ 270 0028 08D0     		beq	.L15
+ 268:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     {
+ 269:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       if((HAL_GetTick() - tickstart ) > RNG_TIMEOUT_VALUE)
+ 270:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       {    
+ 271:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****         hrng->State = HAL_RNG_STATE_ERROR;
+ 272:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 273:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****         /* Process Unlocked */
+ 274:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****         __HAL_UNLOCK(hrng);
+ 275:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 276:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****         return HAL_TIMEOUT;
+ 277:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       } 
+ 278:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     }
+ 279:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 280:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Get a 32bit Random number */
+ 281:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->RandomNumber = hrng->Instance->DR;
+ 271              		.loc 1 281 5 is_stmt 1 view .LVU76
+ 272              		.loc 1 281 40 is_stmt 0 view .LVU77
+ 273 002a 9368     		ldr	r3, [r2, #8]
+ 274              		.loc 1 281 24 view .LVU78
+ 275 002c A360     		str	r3, [r4, #8]
+ 282:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     *random32bit = hrng->RandomNumber;
+ 276              		.loc 1 282 5 is_stmt 1 view .LVU79
+ 277              		.loc 1 282 18 is_stmt 0 view .LVU80
+ 278 002e 3360     		str	r3, [r6]
+ 283:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 284:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->State = HAL_RNG_STATE_READY;
+ 279              		.loc 1 284 5 is_stmt 1 view .LVU81
+ 280              		.loc 1 284 17 is_stmt 0 view .LVU82
+ 281 0030 0123     		movs	r3, #1
+ 282 0032 6371     		strb	r3, [r4, #5]
+ 283              	.LBE2:
+ 252:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 284              		.loc 1 252 21 view .LVU83
+ 285 0034 0020     		movs	r0, #0
+ 286              	.LVL15:
+ 287              	.L13:
+ 285:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 286:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   else
+ 287:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 288:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     status = HAL_ERROR;
+ 289:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 290:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 291:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Process Unlocked */
+ 292:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_UNLOCK(hrng);
+ 288              		.loc 1 292 3 is_stmt 1 view .LVU84
+ 289              		.loc 1 292 3 view .LVU85
+ 290 0036 0023     		movs	r3, #0
+ 291 0038 2371     		strb	r3, [r4, #4]
+ 292              		.loc 1 292 3 view .LVU86
+ 293:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 294:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return status;
+ 293              		.loc 1 294 3 view .LVU87
+ 294              		.loc 1 294 10 is_stmt 0 view .LVU88
+ 295 003a 08E0     		b	.L12
+ 296              	.LVL16:
+ 297              	.L15:
+ 298              	.LBB3:
+ 269:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       {    
+ 299              		.loc 1 269 7 is_stmt 1 view .LVU89
+ 269:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       {    
+ 300              		.loc 1 269 11 is_stmt 0 view .LVU90
+ 301 003c FFF7FEFF 		bl	HAL_GetTick
+ 302              	.LVL17:
+ 269:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       {    
+ 303              		.loc 1 269 25 discriminator 1 view .LVU91
+ 304 0040 C01B     		subs	r0, r0, r7
+ 269:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       {    
+ 305              		.loc 1 269 9 discriminator 1 view .LVU92
+ 306 0042 0228     		cmp	r0, #2
+ 307 0044 ECD9     		bls	.L14
+ 271:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 308              		.loc 1 271 9 is_stmt 1 view .LVU93
+ 271:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 309              		.loc 1 271 21 is_stmt 0 view .LVU94
+ 310 0046 0423     		movs	r3, #4
+ 311 0048 6371     		strb	r3, [r4, #5]
+ 274:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 312              		.loc 1 274 9 is_stmt 1 view .LVU95
+ 274:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 313              		.loc 1 274 9 view .LVU96
+ 314 004a 2571     		strb	r5, [r4, #4]
+ 274:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 315              		.loc 1 274 9 view .LVU97
+ 276:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       } 
+ 316              		.loc 1 276 9 view .LVU98
+ 276:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       } 
+ 317              		.loc 1 276 16 is_stmt 0 view .LVU99
+ 318 004c 0320     		movs	r0, #3
+ 319              	.LVL18:
+ 320              	.L12:
+ 276:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       } 
+ 321              		.loc 1 276 16 view .LVU100
+ 322              	.LBE3:
+ 295:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 323              		.loc 1 295 1 view .LVU101
+ 324 004e F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 325              	.LVL19:
+ 326              	.L16:
+ 255:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 327              		.loc 1 255 3 discriminator 1 view .LVU102
+ 328 0050 0220     		movs	r0, #2
+ 329              	.LVL20:
+ 255:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 330              		.loc 1 255 3 discriminator 1 view .LVU103
+ 331 0052 FCE7     		b	.L12
+ 332              		.cfi_endproc
+ 333              	.LFE130:
+ 335              		.section	.text.HAL_RNG_GenerateRandomNumber_IT,"ax",%progbits
+ 336              		.align	1
+ 337              		.global	HAL_RNG_GenerateRandomNumber_IT
+ 338              		.syntax unified
+ 339              		.thumb
+ 340              		.thumb_func
+ 342              	HAL_RNG_GenerateRandomNumber_IT:
+ 343              	.LVL21:
+ 344              	.LFB131:
+ 296:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 297:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 298:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Generates a 32-bit random number in interrupt mode.
+ 299:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 300:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 301:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval HAL status
+ 302:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 303:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** HAL_StatusTypeDef HAL_RNG_GenerateRandomNumber_IT(RNG_HandleTypeDef *hrng)
+ 304:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 345              		.loc 1 304 1 is_stmt 1 view -0
+ 346              		.cfi_startproc
+ 347              		@ args = 0, pretend = 0, frame = 0
+ 348              		@ frame_needed = 0, uses_anonymous_args = 0
+ 349              		@ link register save eliminated.
+ 305:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   HAL_StatusTypeDef status = HAL_OK;
+ 350              		.loc 1 305 3 view .LVU105
+ 306:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 307:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Process Locked */
+ 308:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_LOCK(hrng);
+ 351              		.loc 1 308 3 view .LVU106
+ 352              		.loc 1 308 3 view .LVU107
+ 353 0000 0379     		ldrb	r3, [r0, #4]	@ zero_extendqisi2
+ 354 0002 012B     		cmp	r3, #1
+ 355 0004 11D0     		beq	.L22
+ 356              		.loc 1 308 3 discriminator 2 view .LVU108
+ 357              		.loc 1 308 3 discriminator 2 view .LVU109
+ 309:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 310:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check RNG peripheral state */
+ 311:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(hrng->State == HAL_RNG_STATE_READY)
+ 358              		.loc 1 311 3 view .LVU110
+ 359              		.loc 1 311 10 is_stmt 0 view .LVU111
+ 360 0006 4379     		ldrb	r3, [r0, #5]	@ zero_extendqisi2
+ 361              		.loc 1 311 5 view .LVU112
+ 362 0008 012B     		cmp	r3, #1
+ 363 000a 4FF00003 		mov	r3, #0
+ 364 000e 09D1     		bne	.L21
+ 312:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 313:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Change RNG peripheral state */  
+ 314:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->State = HAL_RNG_STATE_BUSY;  
+ 365              		.loc 1 314 5 is_stmt 1 view .LVU113
+ 315:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 316:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Process Unlocked */
+ 317:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     __HAL_UNLOCK(hrng);
+ 318:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 319:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Enable the RNG Interrupts: Data Ready, Clock error, Seed error */ 
+ 320:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     __HAL_RNG_ENABLE_IT(hrng);
+ 366              		.loc 1 320 5 is_stmt 0 view .LVU114
+ 367 0010 0168     		ldr	r1, [r0]
+ 317:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 368              		.loc 1 317 5 view .LVU115
+ 369 0012 0371     		strb	r3, [r0, #4]
+ 314:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 370              		.loc 1 314 17 view .LVU116
+ 371 0014 0222     		movs	r2, #2
+ 372 0016 4271     		strb	r2, [r0, #5]
+ 317:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 373              		.loc 1 317 5 is_stmt 1 view .LVU117
+ 317:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 374              		.loc 1 317 5 view .LVU118
+ 317:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 375              		.loc 1 317 5 view .LVU119
+ 376              		.loc 1 320 5 view .LVU120
+ 377 0018 0A68     		ldr	r2, [r1]
+ 378 001a 42F00802 		orr	r2, r2, #8
+ 379 001e 0A60     		str	r2, [r1]
+ 305:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 380              		.loc 1 305 21 is_stmt 0 view .LVU121
+ 381 0020 1846     		mov	r0, r3
+ 382              	.LVL22:
+ 305:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 383              		.loc 1 305 21 view .LVU122
+ 384 0022 7047     		bx	lr
+ 385              	.LVL23:
+ 386              	.L21:
+ 321:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 322:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   else
+ 323:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 324:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Process Unlocked */
+ 325:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     __HAL_UNLOCK(hrng);
+ 387              		.loc 1 325 5 is_stmt 1 view .LVU123
+ 388              		.loc 1 325 5 view .LVU124
+ 389 0024 0371     		strb	r3, [r0, #4]
+ 390              		.loc 1 325 5 view .LVU125
+ 326:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 327:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     status = HAL_ERROR;
+ 391              		.loc 1 327 5 view .LVU126
+ 392              	.LVL24:
+ 393              		.loc 1 327 12 is_stmt 0 view .LVU127
+ 394 0026 0120     		movs	r0, #1
+ 395              	.LVL25:
+ 396              		.loc 1 327 12 view .LVU128
+ 397 0028 7047     		bx	lr
+ 398              	.LVL26:
+ 399              	.L22:
+ 308:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 400              		.loc 1 308 3 discriminator 1 view .LVU129
+ 401 002a 0220     		movs	r0, #2
+ 402              	.LVL27:
+ 328:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 329:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 330:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return status;
+ 331:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 403              		.loc 1 331 1 view .LVU130
+ 404 002c 7047     		bx	lr
+ 405              		.cfi_endproc
+ 406              	.LFE131:
+ 408              		.section	.text.HAL_RNG_GetRandomNumber,"ax",%progbits
+ 409              		.align	1
+ 410              		.global	HAL_RNG_GetRandomNumber
+ 411              		.syntax unified
+ 412              		.thumb
+ 413              		.thumb_func
+ 415              	HAL_RNG_GetRandomNumber:
+ 416              	.LVL28:
+ 417              	.LFB133:
+ 332:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 333:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 334:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Handles RNG interrupt request.
+ 335:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @note   In the case of a clock error, the RNG is no more able to generate 
+ 336:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         random numbers because the PLL48CLK clock is not correct. User has 
+ 337:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         to check that the clock controller is correctly configured to provide
+ 338:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         the RNG clock and clear the CEIS bit using __HAL_RNG_CLEAR_IT(). 
+ 339:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         The clock error has no impact on the previously generated 
+ 340:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         random numbers, and the RNG_DR register contents can be used.
+ 341:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @note   In the case of a seed error, the generation of random numbers is 
+ 342:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         interrupted as long as the SECS bit is '1'. If a number is 
+ 343:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         available in the RNG_DR register, it must not be used because it may 
+ 344:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         not have enough entropy. In this case, it is recommended to clear the 
+ 345:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         SEIS bit using __HAL_RNG_CLEAR_IT(), then disable and enable 
+ 346:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         the RNG peripheral to reinitialize and restart the RNG.
+ 347:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @note   User-written HAL_RNG_ErrorCallback() API is called once whether SEIS
+ 348:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         or CEIS are set.  
+ 349:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 350:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 351:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval None
+ 352:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 353:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 354:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** void HAL_RNG_IRQHandler(RNG_HandleTypeDef *hrng)
+ 355:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 356:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* RNG clock error interrupt occurred */
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if((__HAL_RNG_GET_IT(hrng, RNG_IT_CEI) != RESET) ||  (__HAL_RNG_GET_IT(hrng, RNG_IT_SEI) != RESET
+ 358:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 359:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Change RNG peripheral state */
+ 360:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->State = HAL_RNG_STATE_ERROR;
+ 361:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 362:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     HAL_RNG_ErrorCallback(hrng);
+ 363:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 364:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Clear the clock error flag */
+ 365:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     __HAL_RNG_CLEAR_IT(hrng, RNG_IT_CEI|RNG_IT_SEI);
+ 366:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 367:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 368:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 369:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Check RNG data ready interrupt occurred */    
+ 370:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(__HAL_RNG_GET_IT(hrng, RNG_IT_DRDY) != RESET)
+ 371:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 372:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Generate random number once, so disable the IT */
+ 373:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     __HAL_RNG_DISABLE_IT(hrng);
+ 374:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 375:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     /* Get the 32bit Random number (DRDY flag automatically cleared) */ 
+ 376:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     hrng->RandomNumber = hrng->Instance->DR;
+ 377:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 378:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     if(hrng->State != HAL_RNG_STATE_ERROR)
+ 379:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     {
+ 380:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       /* Change RNG peripheral state */
+ 381:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       hrng->State = HAL_RNG_STATE_READY; 
+ 382:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 383:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       /* Data Ready callback */ 
+ 384:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       HAL_RNG_ReadyDataCallback(hrng, hrng->RandomNumber);
+ 385:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     } 
+ 386:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 387:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** } 
+ 388:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 389:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 390:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Returns generated random number in polling mode (Obsolete)
+ 391:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         Use HAL_RNG_GenerateRandomNumber() API instead.
+ 392:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 393:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 394:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval Random value
+ 395:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 396:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** uint32_t HAL_RNG_GetRandomNumber(RNG_HandleTypeDef *hrng)
+ 397:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 418              		.loc 1 397 1 is_stmt 1 view -0
+ 419              		.cfi_startproc
+ 420              		@ args = 0, pretend = 0, frame = 0
+ 421              		@ frame_needed = 0, uses_anonymous_args = 0
+ 398:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(HAL_RNG_GenerateRandomNumber(hrng, &(hrng->RandomNumber)) == HAL_OK)
+ 422              		.loc 1 398 3 view .LVU132
+ 397:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(HAL_RNG_GenerateRandomNumber(hrng, &(hrng->RandomNumber)) == HAL_OK)
+ 423              		.loc 1 397 1 is_stmt 0 view .LVU133
+ 424 0000 10B5     		push	{r4, lr}
+ 425              	.LCFI3:
+ 426              		.cfi_def_cfa_offset 8
+ 427              		.cfi_offset 4, -8
+ 428              		.cfi_offset 14, -4
+ 429              		.loc 1 398 6 view .LVU134
+ 430 0002 00F10801 		add	r1, r0, #8
+ 397:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   if(HAL_RNG_GenerateRandomNumber(hrng, &(hrng->RandomNumber)) == HAL_OK)
+ 431              		.loc 1 397 1 view .LVU135
+ 432 0006 0446     		mov	r4, r0
+ 433              		.loc 1 398 6 view .LVU136
+ 434 0008 FFF7FEFF 		bl	HAL_RNG_GenerateRandomNumber
+ 435              	.LVL29:
+ 436              		.loc 1 398 5 discriminator 1 view .LVU137
+ 437 000c 08B9     		cbnz	r0, .L25
+ 399:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 400:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     return hrng->RandomNumber; 
+ 438              		.loc 1 400 5 is_stmt 1 view .LVU138
+ 439              		.loc 1 400 16 is_stmt 0 view .LVU139
+ 440 000e A068     		ldr	r0, [r4, #8]
+ 441              	.L23:
+ 401:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 402:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   else
+ 403:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 404:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     return 0U;
+ 405:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 406:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 442              		.loc 1 406 1 view .LVU140
+ 443 0010 10BD     		pop	{r4, pc}
+ 444              	.LVL30:
+ 445              	.L25:
+ 404:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   }
+ 446              		.loc 1 404 12 view .LVU141
+ 447 0012 0020     		movs	r0, #0
+ 448 0014 FCE7     		b	.L23
+ 449              		.cfi_endproc
+ 450              	.LFE133:
+ 452              		.section	.text.HAL_RNG_GetRandomNumber_IT,"ax",%progbits
+ 453              		.align	1
+ 454              		.global	HAL_RNG_GetRandomNumber_IT
+ 455              		.syntax unified
+ 456              		.thumb
+ 457              		.thumb_func
+ 459              	HAL_RNG_GetRandomNumber_IT:
+ 460              	.LVL31:
+ 461              	.LFB134:
+ 407:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 408:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 409:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Returns a 32-bit random number with interrupt enabled (Obsolete),
+ 410:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *         Use HAL_RNG_GenerateRandomNumber_IT() API instead.
+ 411:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 412:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 413:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval 32-bit random number
+ 414:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 415:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** uint32_t HAL_RNG_GetRandomNumber_IT(RNG_HandleTypeDef *hrng)
+ 416:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 462              		.loc 1 416 1 is_stmt 1 view -0
+ 463              		.cfi_startproc
+ 464              		@ args = 0, pretend = 0, frame = 0
+ 465              		@ frame_needed = 0, uses_anonymous_args = 0
+ 466              		@ link register save eliminated.
+ 417:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   uint32_t random32bit = 0U;
+ 467              		.loc 1 417 3 view .LVU143
+ 418:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 419:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Process locked */
+ 420:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_LOCK(hrng);
+ 468              		.loc 1 420 3 view .LVU144
+ 469              		.loc 1 420 3 view .LVU145
+ 470 0000 0379     		ldrb	r3, [r0, #4]	@ zero_extendqisi2
+ 471 0002 012B     		cmp	r3, #1
+ 472 0004 4FF00203 		mov	r3, #2
+ 473 0008 09D0     		beq	.L28
+ 474              		.loc 1 420 3 discriminator 2 view .LVU146
+ 421:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 422:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Change RNG peripheral state */  
+ 423:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   hrng->State = HAL_RNG_STATE_BUSY;  
+ 475              		.loc 1 423 15 is_stmt 0 view .LVU147
+ 476 000a 4371     		strb	r3, [r0, #5]
+ 420:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 477              		.loc 1 420 3 discriminator 2 view .LVU148
+ 478 000c 0122     		movs	r2, #1
+ 424:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 425:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Get a 32bit Random number */ 
+ 426:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   random32bit = hrng->Instance->DR;
+ 479              		.loc 1 426 21 view .LVU149
+ 480 000e 0368     		ldr	r3, [r0]
+ 420:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 481              		.loc 1 420 3 discriminator 2 view .LVU150
+ 482 0010 0271     		strb	r2, [r0, #4]
+ 420:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 483              		.loc 1 420 3 is_stmt 1 discriminator 2 view .LVU151
+ 423:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 484              		.loc 1 423 3 view .LVU152
+ 485              		.loc 1 426 3 view .LVU153
+ 486              		.loc 1 426 15 is_stmt 0 view .LVU154
+ 487 0012 9868     		ldr	r0, [r3, #8]
+ 488              	.LVL32:
+ 427:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 428:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Enable the RNG Interrupts: Data Ready, Clock error, Seed error */ 
+ 429:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   __HAL_RNG_ENABLE_IT(hrng); 
+ 489              		.loc 1 429 3 is_stmt 1 view .LVU155
+ 490 0014 1A68     		ldr	r2, [r3]
+ 491 0016 42F00802 		orr	r2, r2, #8
+ 492 001a 1A60     		str	r2, [r3]
+ 430:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 431:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Return the 32 bit random number */   
+ 432:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return random32bit;
+ 493              		.loc 1 432 3 view .LVU156
+ 494              		.loc 1 432 10 is_stmt 0 view .LVU157
+ 495 001c 7047     		bx	lr
+ 496              	.LVL33:
+ 497              	.L28:
+ 420:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 498              		.loc 1 420 3 discriminator 1 view .LVU158
+ 499 001e 1846     		mov	r0, r3
+ 500              	.LVL34:
+ 433:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 501              		.loc 1 433 1 view .LVU159
+ 502 0020 7047     		bx	lr
+ 503              		.cfi_endproc
+ 504              	.LFE134:
+ 506              		.section	.text.HAL_RNG_ReadLastRandomNumber,"ax",%progbits
+ 507              		.align	1
+ 508              		.global	HAL_RNG_ReadLastRandomNumber
+ 509              		.syntax unified
+ 510              		.thumb
+ 511              		.thumb_func
+ 513              	HAL_RNG_ReadLastRandomNumber:
+ 514              	.LVL35:
+ 515              	.LFB135:
+ 434:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 435:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 436:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Read latest generated random number. 
+ 437:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 438:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 439:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval random value
+ 440:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 441:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** uint32_t HAL_RNG_ReadLastRandomNumber(RNG_HandleTypeDef *hrng)
+ 442:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 516              		.loc 1 442 1 is_stmt 1 view -0
+ 517              		.cfi_startproc
+ 518              		@ args = 0, pretend = 0, frame = 0
+ 519              		@ frame_needed = 0, uses_anonymous_args = 0
+ 520              		@ link register save eliminated.
+ 443:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return(hrng->RandomNumber);
+ 521              		.loc 1 443 3 view .LVU161
+ 444:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 522              		.loc 1 444 1 is_stmt 0 view .LVU162
+ 523 0000 8068     		ldr	r0, [r0, #8]
+ 524              	.LVL36:
+ 525              		.loc 1 444 1 view .LVU163
+ 526 0002 7047     		bx	lr
+ 527              		.cfi_endproc
+ 528              	.LFE135:
+ 530              		.section	.text.HAL_RNG_ReadyDataCallback,"ax",%progbits
+ 531              		.align	1
+ 532              		.weak	HAL_RNG_ReadyDataCallback
+ 533              		.syntax unified
+ 534              		.thumb
+ 535              		.thumb_func
+ 537              	HAL_RNG_ReadyDataCallback:
+ 538              	.LVL37:
+ 539              	.LFB136:
+ 445:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 446:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 447:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Data Ready callback in non-blocking mode. 
+ 448:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 449:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 450:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  random32bit: generated random number.
+ 451:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval None
+ 452:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 453:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** __weak void HAL_RNG_ReadyDataCallback(RNG_HandleTypeDef *hrng, uint32_t random32bit)
+ 454:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 540              		.loc 1 454 1 is_stmt 1 view -0
+ 541              		.cfi_startproc
+ 542              		@ args = 0, pretend = 0, frame = 0
+ 543              		@ frame_needed = 0, uses_anonymous_args = 0
+ 544              		@ link register save eliminated.
+ 455:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Prevent unused argument(s) compilation warning */
+ 456:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   UNUSED(hrng);
+ 545              		.loc 1 456 3 view .LVU165
+ 457:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   UNUSED(random32bit);
+ 546              		.loc 1 457 3 view .LVU166
+ 458:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* NOTE : This function should not be modified. When the callback is needed,
+ 459:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****             function HAL_RNG_ReadyDataCallback must be implemented in the user file.
+ 460:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****    */
+ 461:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 547              		.loc 1 461 1 is_stmt 0 view .LVU167
+ 548 0000 7047     		bx	lr
+ 549              		.cfi_endproc
+ 550              	.LFE136:
+ 552              		.section	.text.HAL_RNG_ErrorCallback,"ax",%progbits
+ 553              		.align	1
+ 554              		.weak	HAL_RNG_ErrorCallback
+ 555              		.syntax unified
+ 556              		.thumb
+ 557              		.thumb_func
+ 559              	HAL_RNG_ErrorCallback:
+ 560              	.LFB142:
+ 561              		.cfi_startproc
+ 462:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 463:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 464:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  RNG error callbacks.
+ 465:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 466:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 467:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval None
+ 468:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 469:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** __weak void HAL_RNG_ErrorCallback(RNG_HandleTypeDef *hrng)
+ 562              		.loc 1 469 13 is_stmt 1 view -0
+ 563              		@ args = 0, pretend = 0, frame = 0
+ 564              		@ frame_needed = 0, uses_anonymous_args = 0
+ 565              		@ link register save eliminated.
+ 566 0000 7047     		bx	lr
+ 567              		.cfi_endproc
+ 568              	.LFE142:
+ 570              		.section	.text.HAL_RNG_IRQHandler,"ax",%progbits
+ 571              		.align	1
+ 572              		.global	HAL_RNG_IRQHandler
+ 573              		.syntax unified
+ 574              		.thumb
+ 575              		.thumb_func
+ 577              	HAL_RNG_IRQHandler:
+ 578              	.LVL38:
+ 579              	.LFB132:
+ 355:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* RNG clock error interrupt occurred */
+ 580              		.loc 1 355 1 view -0
+ 581              		.cfi_startproc
+ 582              		@ args = 0, pretend = 0, frame = 0
+ 583              		@ frame_needed = 0, uses_anonymous_args = 0
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 584              		.loc 1 357 3 view .LVU170
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 585              		.loc 1 357 7 is_stmt 0 view .LVU171
+ 586 0000 0368     		ldr	r3, [r0]
+ 587 0002 5A68     		ldr	r2, [r3, #4]
+ 355:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* RNG clock error interrupt occurred */
+ 588              		.loc 1 355 1 view .LVU172
+ 589 0004 10B5     		push	{r4, lr}
+ 590              	.LCFI4:
+ 591              		.cfi_def_cfa_offset 8
+ 592              		.cfi_offset 4, -8
+ 593              		.cfi_offset 14, -4
+ 355:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* RNG clock error interrupt occurred */
+ 594              		.loc 1 355 1 view .LVU173
+ 595 0006 0446     		mov	r4, r0
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 596              		.loc 1 357 5 view .LVU174
+ 597 0008 9006     		lsls	r0, r2, #26
+ 598              	.LVL39:
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 599              		.loc 1 357 5 view .LVU175
+ 600 000a 02D4     		bmi	.L33
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 601              		.loc 1 357 57 discriminator 1 view .LVU176
+ 602 000c 5B68     		ldr	r3, [r3, #4]
+ 357:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   { 
+ 603              		.loc 1 357 52 discriminator 1 view .LVU177
+ 604 000e 5906     		lsls	r1, r3, #25
+ 605 0010 08D5     		bpl	.L34
+ 606              	.L33:
+ 360:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 607              		.loc 1 360 5 is_stmt 1 view .LVU178
+ 360:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 608              		.loc 1 360 17 is_stmt 0 view .LVU179
+ 609 0012 0423     		movs	r3, #4
+ 610 0014 6371     		strb	r3, [r4, #5]
+ 362:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 611              		.loc 1 362 5 is_stmt 1 view .LVU180
+ 612 0016 2046     		mov	r0, r4
+ 613 0018 FFF7FEFF 		bl	HAL_RNG_ErrorCallback
+ 614              	.LVL40:
+ 365:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 615              		.loc 1 365 5 view .LVU181
+ 616 001c 2368     		ldr	r3, [r4]
+ 617 001e 6FF06002 		mvn	r2, #96
+ 618 0022 5A60     		str	r2, [r3, #4]
+ 619              	.L34:
+ 370:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 620              		.loc 1 370 3 view .LVU182
+ 370:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 621              		.loc 1 370 6 is_stmt 0 view .LVU183
+ 622 0024 2368     		ldr	r3, [r4]
+ 623 0026 5A68     		ldr	r2, [r3, #4]
+ 370:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   {
+ 624              		.loc 1 370 5 view .LVU184
+ 625 0028 D207     		lsls	r2, r2, #31
+ 626 002a 0DD5     		bpl	.L32
+ 373:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 627              		.loc 1 373 5 is_stmt 1 view .LVU185
+ 628 002c 1A68     		ldr	r2, [r3]
+ 629 002e 22F00802 		bic	r2, r2, #8
+ 630 0032 1A60     		str	r2, [r3]
+ 376:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 631              		.loc 1 376 5 view .LVU186
+ 376:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 632              		.loc 1 376 40 is_stmt 0 view .LVU187
+ 633 0034 9968     		ldr	r1, [r3, #8]
+ 378:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     {
+ 634              		.loc 1 378 12 view .LVU188
+ 635 0036 6379     		ldrb	r3, [r4, #5]	@ zero_extendqisi2
+ 376:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     
+ 636              		.loc 1 376 24 view .LVU189
+ 637 0038 A160     		str	r1, [r4, #8]
+ 378:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     {
+ 638              		.loc 1 378 5 is_stmt 1 view .LVU190
+ 378:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     {
+ 639              		.loc 1 378 7 is_stmt 0 view .LVU191
+ 640 003a 042B     		cmp	r3, #4
+ 641 003c 04D0     		beq	.L32
+ 381:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 642              		.loc 1 381 7 is_stmt 1 view .LVU192
+ 381:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****       
+ 643              		.loc 1 381 19 is_stmt 0 view .LVU193
+ 644 003e 0123     		movs	r3, #1
+ 645 0040 6371     		strb	r3, [r4, #5]
+ 384:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     } 
+ 646              		.loc 1 384 7 is_stmt 1 view .LVU194
+ 647 0042 2046     		mov	r0, r4
+ 648 0044 FFF7FEFF 		bl	HAL_RNG_ReadyDataCallback
+ 649              	.LVL41:
+ 650              	.L32:
+ 387:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 651              		.loc 1 387 1 is_stmt 0 view .LVU195
+ 652 0048 10BD     		pop	{r4, pc}
+ 387:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 653              		.loc 1 387 1 view .LVU196
+ 654              		.cfi_endproc
+ 655              	.LFE132:
+ 657              		.section	.text.HAL_RNG_GetState,"ax",%progbits
+ 658              		.align	1
+ 659              		.global	HAL_RNG_GetState
+ 660              		.syntax unified
+ 661              		.thumb
+ 662              		.thumb_func
+ 664              	HAL_RNG_GetState:
+ 665              	.LVL42:
+ 666              	.LFB138:
+ 470:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 471:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* Prevent unused argument(s) compilation warning */
+ 472:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   UNUSED(hrng);
+ 473:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   /* NOTE : This function should not be modified. When the callback is needed,
+ 474:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****             function HAL_RNG_ErrorCallback must be implemented in the user file.
+ 475:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****    */
+ 476:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 477:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 478:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @}
+ 479:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */ 
+ 480:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 481:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 482:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /** @addtogroup RNG_Exported_Functions_Group3
+ 483:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  *  @brief   Peripheral State functions 
+ 484:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  *
+ 485:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** @verbatim   
+ 486:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  ===============================================================================
+ 487:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****                       ##### Peripheral State functions #####
+ 488:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****  ===============================================================================  
+ 489:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     [..]
+ 490:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     This subsection permits to get in run-time the status of the peripheral 
+ 491:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****     and the data flow.
+ 492:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** 
+ 493:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** @endverbatim
+ 494:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @{
+ 495:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 496:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   
+ 497:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** /**
+ 498:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @brief  Returns the RNG state.
+ 499:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @param  hrng: pointer to a RNG_HandleTypeDef structure that contains
+ 500:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   *                the configuration information for RNG.
+ 501:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   * @retval HAL state
+ 502:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   */
+ 503:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** HAL_RNG_StateTypeDef HAL_RNG_GetState(RNG_HandleTypeDef *hrng)
+ 504:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** {
+ 667              		.loc 1 504 1 is_stmt 1 view -0
+ 668              		.cfi_startproc
+ 669              		@ args = 0, pretend = 0, frame = 0
+ 670              		@ frame_needed = 0, uses_anonymous_args = 0
+ 671              		@ link register save eliminated.
+ 505:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c ****   return hrng->State;
+ 672              		.loc 1 505 3 view .LVU198
+ 673              		.loc 1 505 14 is_stmt 0 view .LVU199
+ 674 0000 4079     		ldrb	r0, [r0, #5]	@ zero_extendqisi2
+ 675              	.LVL43:
+ 506:../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.c **** }
+ 676              		.loc 1 506 1 view .LVU200
+ 677 0002 7047     		bx	lr
+ 678              		.cfi_endproc
+ 679              	.LFE138:
+ 681              		.text
+ 682              	.Letext0:
+ 683              		.file 2 "../.././hal/chipwhisperer-fw-extra/stm32f4/CMSIS/device/stm32f415xx.h"
+ 684              		.file 3 "/usr/lib/gcc/arm-none-eabi/13.2.1/include/stdint.h"
+ 685              		.file 4 "../.././hal/chipwhisperer-fw-extra/stm32f4/CMSIS/device/stm32f4xx.h"
+ 686              		.file 5 "../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_def.h"
+ 687              		.file 6 "../.././hal/chipwhisperer-fw-extra/stm32f4/stm32f4xx_hal_rng.h"
+DEFINED SYMBOLS
+                            *ABS*:00000000 stm32f4xx_hal_rng.c
+     /tmp/ccE0cDaz.s:19     .text.HAL_RNG_MspInit:00000000 $t
+     /tmp/ccE0cDaz.s:25     .text.HAL_RNG_MspInit:00000000 HAL_RNG_MspInit
+     /tmp/ccE0cDaz.s:40     .text.HAL_RNG_Init:00000000 $t
+     /tmp/ccE0cDaz.s:46     .text.HAL_RNG_Init:00000000 HAL_RNG_Init
+     /tmp/ccE0cDaz.s:125    .text.HAL_RNG_MspDeInit:00000000 $t
+     /tmp/ccE0cDaz.s:131    .text.HAL_RNG_MspDeInit:00000000 HAL_RNG_MspDeInit
+     /tmp/ccE0cDaz.s:143    .text.HAL_RNG_DeInit:00000000 $t
+     /tmp/ccE0cDaz.s:149    .text.HAL_RNG_DeInit:00000000 HAL_RNG_DeInit
+     /tmp/ccE0cDaz.s:201    .text.HAL_RNG_GenerateRandomNumber:00000000 $t
+     /tmp/ccE0cDaz.s:207    .text.HAL_RNG_GenerateRandomNumber:00000000 HAL_RNG_GenerateRandomNumber
+     /tmp/ccE0cDaz.s:336    .text.HAL_RNG_GenerateRandomNumber_IT:00000000 $t
+     /tmp/ccE0cDaz.s:342    .text.HAL_RNG_GenerateRandomNumber_IT:00000000 HAL_RNG_GenerateRandomNumber_IT
+     /tmp/ccE0cDaz.s:409    .text.HAL_RNG_GetRandomNumber:00000000 $t
+     /tmp/ccE0cDaz.s:415    .text.HAL_RNG_GetRandomNumber:00000000 HAL_RNG_GetRandomNumber
+     /tmp/ccE0cDaz.s:453    .text.HAL_RNG_GetRandomNumber_IT:00000000 $t
+     /tmp/ccE0cDaz.s:459    .text.HAL_RNG_GetRandomNumber_IT:00000000 HAL_RNG_GetRandomNumber_IT
+     /tmp/ccE0cDaz.s:507    .text.HAL_RNG_ReadLastRandomNumber:00000000 $t
+     /tmp/ccE0cDaz.s:513    .text.HAL_RNG_ReadLastRandomNumber:00000000 HAL_RNG_ReadLastRandomNumber
+     /tmp/ccE0cDaz.s:531    .text.HAL_RNG_ReadyDataCallback:00000000 $t
+     /tmp/ccE0cDaz.s:537    .text.HAL_RNG_ReadyDataCallback:00000000 HAL_RNG_ReadyDataCallback
+     /tmp/ccE0cDaz.s:553    .text.HAL_RNG_ErrorCallback:00000000 $t
+     /tmp/ccE0cDaz.s:559    .text.HAL_RNG_ErrorCallback:00000000 HAL_RNG_ErrorCallback
+     /tmp/ccE0cDaz.s:571    .text.HAL_RNG_IRQHandler:00000000 $t
+     /tmp/ccE0cDaz.s:577    .text.HAL_RNG_IRQHandler:00000000 HAL_RNG_IRQHandler
+     /tmp/ccE0cDaz.s:658    .text.HAL_RNG_GetState:00000000 $t
+     /tmp/ccE0cDaz.s:664    .text.HAL_RNG_GetState:00000000 HAL_RNG_GetState
+
+UNDEFINED SYMBOLS
+HAL_GetTick

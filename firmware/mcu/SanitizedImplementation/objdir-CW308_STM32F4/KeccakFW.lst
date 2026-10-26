@@ -1,0 +1,2928 @@
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 4
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.file	"KeccakFW.c"
+  14              		.text
+  15              	.Ltext0:
+  16              		.cfi_sections	.debug_frame
+  17              		.file 1 "KeccakFW.c"
+  18              		.section	.text.get_mask,"ax",%progbits
+  19              		.align	1
+  20              		.global	get_mask
+  21              		.syntax unified
+  22              		.thumb
+  23              		.thumb_func
+  25              	get_mask:
+  26              	.LVL0:
+  27              	.LFB11:
+   1:KeccakFW.c    **** #include <stdio.h>
+   2:KeccakFW.c    **** #include <stdlib.h>
+   3:KeccakFW.c    **** #include <stdint.h>
+   4:KeccakFW.c    **** #include <stddef.h>
+   5:KeccakFW.c    **** #include <string.h>
+   6:KeccakFW.c    **** #include "simpleserial.h"
+   7:KeccakFW.c    **** 
+   8:KeccakFW.c    **** 
+   9:KeccakFW.c    **** 
+  10:KeccakFW.c    **** 
+  11:KeccakFW.c    **** 
+  12:KeccakFW.c    **** uint8_t seed_chacha20[32];
+  13:KeccakFW.c    **** uint8_t initial_mask[2];
+  14:KeccakFW.c    **** volatile uint8_t s0[200];
+  15:KeccakFW.c    **** volatile uint8_t I0[200];
+  16:KeccakFW.c    **** 
+  17:KeccakFW.c    **** volatile uint8_t s1[200];
+  18:KeccakFW.c    **** volatile uint8_t I1[200];
+  19:KeccakFW.c    **** 
+  20:KeccakFW.c    **** volatile uint8_t s2[200];
+  21:KeccakFW.c    **** volatile uint8_t I2[200];
+  22:KeccakFW.c    **** 
+  23:KeccakFW.c    **** volatile uint8_t ISHARES[1328];
+  24:KeccakFW.c    **** 
+  25:KeccakFW.c    **** size_t n = 50;
+  26:KeccakFW.c    **** 
+  27:KeccakFW.c    **** 
+  28:KeccakFW.c    **** uint8_t rec[200];
+  29:KeccakFW.c    **** uint8_t rec_d[200];
+  30:KeccakFW.c    **** uint8_t bytes_st[25][8];
+  31:KeccakFW.c    **** uint8_t pt_marker[16];
+  32:KeccakFW.c    **** 
+  33:KeccakFW.c    **** 
+  34:KeccakFW.c    **** volatile unsigned int *DWT_CYCCNT = (volatile unsigned int *)0xE0001004; //address of the register
+  35:KeccakFW.c    **** volatile unsigned int *DWT_CONTROL = (volatile unsigned int *)0xE0001000; //address of the register
+  36:KeccakFW.c    **** volatile unsigned int *SCB_DEMCR = (volatile unsigned int *)0xE000EDFC; //address of the register
+  37:KeccakFW.c    **** uint32_t x, y, delta;
+  38:KeccakFW.c    **** uint8_t num_cycles_bytes[4];
+  39:KeccakFW.c    **** 
+  40:KeccakFW.c    **** 
+  41:KeccakFW.c    **** // ***********************************************************************
+  42:KeccakFW.c    **** // ******************************* CHACHA20 ******************************
+  43:KeccakFW.c    **** // ***********************************************************************
+  44:KeccakFW.c    **** 
+  45:KeccakFW.c    **** #define CHACHA20_BLOCK_SIZE 64
+  46:KeccakFW.c    **** #define SEED_SIZE 32
+  47:KeccakFW.c    **** 
+  48:KeccakFW.c    **** int seed_counter = 0;
+  49:KeccakFW.c    **** uint32_t prng_state;
+  50:KeccakFW.c    **** uint8_t seed_chacha20[32];
+  51:KeccakFW.c    **** 
+  52:KeccakFW.c    **** typedef struct {
+  53:KeccakFW.c    ****     uint32_t state[16];
+  54:KeccakFW.c    ****     uint8_t keystream[CHACHA20_BLOCK_SIZE];
+  55:KeccakFW.c    ****     int keystream_pos;
+  56:KeccakFW.c    **** } chacha20_prng_t;
+  57:KeccakFW.c    **** 
+  58:KeccakFW.c    **** static chacha20_prng_t prng;
+  59:KeccakFW.c    **** static const uint32_t chacha20_constants[4] = {
+  60:KeccakFW.c    ****     0x61707865, 0x3320646e, 0x79622d32, 0x6b206574
+  61:KeccakFW.c    **** };
+  62:KeccakFW.c    **** 
+  63:KeccakFW.c    **** #define ROTL(a,b) (((a) << (b)) | ((a) >> (32 - (b))))
+  64:KeccakFW.c    **** #define QUARTERROUND(a,b,c,d) \
+  65:KeccakFW.c    ****     a += b; d ^= a; d = ROTL(d,16); \
+  66:KeccakFW.c    ****     c += d; b ^= c; b = ROTL(b,12); \
+  67:KeccakFW.c    ****     a += b; d ^= a; d = ROTL(d,8);  \
+  68:KeccakFW.c    ****     c += d; b ^= c; b = ROTL(b,7);
+  69:KeccakFW.c    **** 
+  70:KeccakFW.c    **** static void chacha20_block(uint32_t out[16], const uint32_t in[16]) {
+  71:KeccakFW.c    ****     uint32_t x[16];
+  72:KeccakFW.c    ****     memcpy(x, in, sizeof(uint32_t) * 16);
+  73:KeccakFW.c    **** 
+  74:KeccakFW.c    ****     for (int i = 0; i < 10; i++) {
+  75:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+  76:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+  77:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+  78:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+  79:KeccakFW.c    **** 
+  80:KeccakFW.c    ****         QUARTERROUND(x[0], x[5], x[10], x[15])
+  81:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+  82:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+  83:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+  84:KeccakFW.c    ****     }
+  85:KeccakFW.c    **** 
+  86:KeccakFW.c    ****     for (int i = 0; i < 16; i++) {
+  87:KeccakFW.c    ****         out[i] = x[i] + in[i];
+  88:KeccakFW.c    ****     }
+  89:KeccakFW.c    **** }
+  90:KeccakFW.c    **** 
+  91:KeccakFW.c    **** void prng_init(const uint8_t seed[32]) {
+  92:KeccakFW.c    ****     prng.state[0] = chacha20_constants[0];
+  93:KeccakFW.c    ****     prng.state[1] = chacha20_constants[1];
+  94:KeccakFW.c    ****     prng.state[2] = chacha20_constants[2];
+  95:KeccakFW.c    ****     prng.state[3] = chacha20_constants[3];
+  96:KeccakFW.c    **** 
+  97:KeccakFW.c    ****     for (int i = 0; i < 8; i++) {
+  98:KeccakFW.c    ****         prng.state[4 + i] =
+  99:KeccakFW.c    ****             ((uint32_t)seed[i*4]) |
+ 100:KeccakFW.c    ****             ((uint32_t)seed[i*4+1] << 8) |
+ 101:KeccakFW.c    ****             ((uint32_t)seed[i*4+2] << 16) |
+ 102:KeccakFW.c    ****             ((uint32_t)seed[i*4+3] << 24);
+ 103:KeccakFW.c    ****     }
+ 104:KeccakFW.c    **** 
+ 105:KeccakFW.c    ****     prng.state[12] = 0; // counter
+ 106:KeccakFW.c    ****     prng.state[13] = 0; prng.state[14] = 0; prng.state[15] = 0; // nonce
+ 107:KeccakFW.c    **** 
+ 108:KeccakFW.c    ****     prng.keystream_pos = CHACHA20_BLOCK_SIZE;
+ 109:KeccakFW.c    **** }
+ 110:KeccakFW.c    **** 
+ 111:KeccakFW.c    **** static void prng_generate_block() {
+ 112:KeccakFW.c    ****     chacha20_block((uint32_t*)prng.keystream, prng.state);
+ 113:KeccakFW.c    ****     prng.state[12]++;
+ 114:KeccakFW.c    ****     prng.keystream_pos = 0;
+ 115:KeccakFW.c    **** }
+ 116:KeccakFW.c    **** 
+ 117:KeccakFW.c    **** uint8_t prng_get_byte() {
+ 118:KeccakFW.c    ****     if (prng.keystream_pos >= CHACHA20_BLOCK_SIZE) {
+ 119:KeccakFW.c    ****         prng_generate_block();
+ 120:KeccakFW.c    ****     }
+ 121:KeccakFW.c    ****     return prng.keystream[prng.keystream_pos++];
+ 122:KeccakFW.c    **** }
+ 123:KeccakFW.c    **** 
+ 124:KeccakFW.c    **** uint64_t rand_share_64() {
+ 125:KeccakFW.c    ****     uint64_t r = 0;
+ 126:KeccakFW.c    ****     for (int i = 0; i < 8; i++) {
+ 127:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 128:KeccakFW.c    ****     }
+ 129:KeccakFW.c    ****     return r;
+ 130:KeccakFW.c    **** }
+ 131:KeccakFW.c    **** 
+ 132:KeccakFW.c    **** 
+ 133:KeccakFW.c    **** // ***************************************************************************
+ 134:KeccakFW.c    **** // *****************************  BIT INTERLEAVING ***************************
+ 135:KeccakFW.c    **** // ***************************************************************************
+ 136:KeccakFW.c    **** void bit_interleave(const uint8_t s0[200], uint8_t I0[200]) {
+ 137:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 138:KeccakFW.c    ****         uint64_t word = 0;
+ 139:KeccakFW.c    ****         for (int j = 0; j < 8; j++) {
+ 140:KeccakFW.c    ****             word |= ((uint64_t)s0[blk + j]) << (8 * j);
+ 141:KeccakFW.c    ****         }
+ 142:KeccakFW.c    **** 
+ 143:KeccakFW.c    ****         uint8_t h[8] = {0};
+ 144:KeccakFW.c    **** 
+ 145:KeccakFW.c    ****         for (int bit = 0; bit < 64; bit++) {
+ 146:KeccakFW.c    ****             int byte_out, bit_out;
+ 147:KeccakFW.c    ****             uint8_t bitval = (word >> bit) & 1;
+ 148:KeccakFW.c    **** 
+ 149:KeccakFW.c    ****             if ((bit / 16) < 4) { 
+ 150:KeccakFW.c    ****                 if ((bit % 2) == 0)
+ 151:KeccakFW.c    ****                     byte_out = (bit / 16);      
+ 152:KeccakFW.c    ****                 else
+ 153:KeccakFW.c    ****                     byte_out = 4 + (bit / 16);  
+ 154:KeccakFW.c    ****                 bit_out = (bit % 16) / 2;
+ 155:KeccakFW.c    ****             } else {
+ 156:KeccakFW.c    ****                 continue; 
+ 157:KeccakFW.c    ****             }
+ 158:KeccakFW.c    **** 
+ 159:KeccakFW.c    ****             h[byte_out] |= bitval << bit_out;
+ 160:KeccakFW.c    ****         }
+ 161:KeccakFW.c    **** 
+ 162:KeccakFW.c    ****         for (int i = 0; i < 8; i++) {
+ 163:KeccakFW.c    ****             I0[blk + i] = h[i];
+ 164:KeccakFW.c    ****         }
+ 165:KeccakFW.c    ****     }
+ 166:KeccakFW.c    **** }
+ 167:KeccakFW.c    **** 
+ 168:KeccakFW.c    **** 
+ 169:KeccakFW.c    **** void bit_deinterleave(const uint8_t I0[200], uint8_t s0[200]) {
+ 170:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 171:KeccakFW.c    ****         uint64_t word = 0;
+ 172:KeccakFW.c    **** 
+ 173:KeccakFW.c    ****         for (int group = 0; group < 4; group++) {
+ 174:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 175:KeccakFW.c    ****             uint8_t odd  = I0[blk + 4 + group];  
+ 176:KeccakFW.c    **** 
+ 177:KeccakFW.c    ****             for (int k = 0; k < 8; k++) {
+ 178:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 179:KeccakFW.c    ****                 uint8_t bit_odd  = (odd  >> k) & 1;
+ 180:KeccakFW.c    **** 
+ 181:KeccakFW.c    ****                 int base = group * 16;
+ 182:KeccakFW.c    **** 
+ 183:KeccakFW.c    ****                 word |= ((uint64_t)bit_even) << (base + 2 * k);
+ 184:KeccakFW.c    ****                 word |= ((uint64_t)bit_odd)  << (base + 2 * k + 1);
+ 185:KeccakFW.c    ****             }
+ 186:KeccakFW.c    ****         }
+ 187:KeccakFW.c    **** 
+ 188:KeccakFW.c    ****         for (int j = 0; j < 8; j++) {
+ 189:KeccakFW.c    ****             s0[blk + j] = (word >> (8 * j)) & 0xFF;
+ 190:KeccakFW.c    ****         }
+ 191:KeccakFW.c    ****     }
+ 192:KeccakFW.c    **** }
+ 193:KeccakFW.c    **** 
+ 194:KeccakFW.c    **** // ***************************************************************************
+ 195:KeccakFW.c    **** // *************************** ASSEMBLY FUNCTION *************************
+ 196:KeccakFW.c    **** // ***************************************************************************
+ 197:KeccakFW.c    **** extern void KeccakF1600_StatePermute(void *share0);
+ 198:KeccakFW.c    **** 
+ 199:KeccakFW.c    **** 
+ 200:KeccakFW.c    **** // ***************************************************************************
+ 201:KeccakFW.c    **** // ********************************* CALLBACKS *******************************
+ 202:KeccakFW.c    **** // ***************************************************************************
+ 203:KeccakFW.c    **** uint8_t get_seed(uint8_t* seed, uint8_t len)
+ 204:KeccakFW.c    **** {
+ 205:KeccakFW.c    ****     int i;
+ 206:KeccakFW.c    ****     for(i=0; i<16; i++)
+ 207:KeccakFW.c    ****     {
+ 208:KeccakFW.c    ****         seed_chacha20[i+(seed_counter*16)] = seed[i]; 
+ 209:KeccakFW.c    ****     }
+ 210:KeccakFW.c    ****     seed_counter = (seed_counter + 1) % 2;
+ 211:KeccakFW.c    ****     if(seed_counter == 0)
+ 212:KeccakFW.c    ****     {
+ 213:KeccakFW.c    ****         prng_init(seed_chacha20);
+ 214:KeccakFW.c    ****     }
+ 215:KeccakFW.c    ****     simpleserial_put('r', 16, seed);
+ 216:KeccakFW.c    ****     return 0x00;
+ 217:KeccakFW.c    **** }
+ 218:KeccakFW.c    **** 
+ 219:KeccakFW.c    **** uint8_t get_mask(uint8_t* mask, uint8_t len)
+ 220:KeccakFW.c    **** {   
+  28              		.loc 1 220 1 view -0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+ 221:KeccakFW.c    ****     int i;
+  32              		.loc 1 221 5 view .LVU1
+ 222:KeccakFW.c    ****     memcpy(&initial_mask[0], &mask[0], 16);
+  33              		.loc 1 222 5 view .LVU2
+ 220:KeccakFW.c    ****     int i;
+  34              		.loc 1 220 1 is_stmt 0 view .LVU3
+  35 0000 10B5     		push	{r4, lr}
+  36              	.LCFI0:
+  37              		.cfi_def_cfa_offset 8
+  38              		.cfi_offset 4, -8
+  39              		.cfi_offset 14, -4
+  40              		.loc 1 222 5 view .LVU4
+  41 0002 0849     		ldr	r1, .L4
+  42              	.LVL1:
+ 220:KeccakFW.c    ****     int i;
+  43              		.loc 1 220 1 view .LVU5
+  44 0004 0246     		mov	r2, r0
+  45              		.loc 1 222 5 view .LVU6
+  46 0006 0346     		mov	r3, r0
+  47 0008 1030     		adds	r0, r0, #16
+  48              	.LVL2:
+  49              	.L2:
+  50              		.loc 1 222 5 view .LVU7
+  51 000a 53F8044B 		ldr	r4, [r3], #4	@ unaligned
+  52 000e 41F8044B 		str	r4, [r1], #4	@ unaligned
+  53 0012 8342     		cmp	r3, r0
+  54 0014 F9D1     		bne	.L2
+ 223:KeccakFW.c    **** 	simpleserial_put('r', 16, mask);
+  55              		.loc 1 223 2 is_stmt 1 view .LVU8
+  56 0016 1021     		movs	r1, #16
+  57 0018 7220     		movs	r0, #114
+  58 001a FFF7FEFF 		bl	simpleserial_put
+  59              	.LVL3:
+ 224:KeccakFW.c    **** 	return 0x00;
+  60              		.loc 1 224 2 view .LVU9
+ 225:KeccakFW.c    **** }
+  61              		.loc 1 225 1 is_stmt 0 view .LVU10
+  62 001e 0020     		movs	r0, #0
+  63 0020 10BD     		pop	{r4, pc}
+  64              	.L5:
+  65 0022 00BF     		.align	2
+  66              	.L4:
+  67 0024 00000000 		.word	.LANCHOR0
+  68              		.cfi_endproc
+  69              	.LFE11:
+  71              		.section	.text.get_cycles,"ax",%progbits
+  72              		.align	1
+  73              		.global	get_cycles
+  74              		.syntax unified
+  75              		.thumb
+  76              		.thumb_func
+  78              	get_cycles:
+  79              	.LVL4:
+  80              	.LFB14:
+ 226:KeccakFW.c    **** 
+ 227:KeccakFW.c    **** uint8_t get_pt(uint8_t* pt, uint8_t len)
+ 228:KeccakFW.c    **** {   
+ 229:KeccakFW.c    ****     int i;
+ 230:KeccakFW.c    ****     create_state(pt, len);
+ 231:KeccakFW.c    ****     mask_state();
+ 232:KeccakFW.c    ****     bit_interleave(s0, I0);
+ 233:KeccakFW.c    ****     bit_interleave(s1, I1);
+ 234:KeccakFW.c    ****     bit_interleave(s2, I2);
+ 235:KeccakFW.c    ****     for(i=0; i<200; i++)
+ 236:KeccakFW.c    ****     {
+ 237:KeccakFW.c    ****         ISHARES[i] = I0[i];
+ 238:KeccakFW.c    ****         ISHARES[i+200] = I1[i];
+ 239:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 240:KeccakFW.c    ****     }
+ 241:KeccakFW.c    ****     *SCB_DEMCR |= 0x01000000;
+ 242:KeccakFW.c    ****     *DWT_CYCCNT = 0; // reset the counter
+ 243:KeccakFW.c    ****     *DWT_CONTROL |= 1 ; // enable the counter
+ 244:KeccakFW.c    ****     x = *DWT_CYCCNT;
+ 245:KeccakFW.c    ****     trigger_high();
+ 246:KeccakFW.c    ****     KeccakF1600_StatePermute(ISHARES);
+ 247:KeccakFW.c    ****     trigger_low();
+ 248:KeccakFW.c    ****     y = *DWT_CYCCNT;
+ 249:KeccakFW.c    ****     delta = (y - x);
+ 250:KeccakFW.c    **** 	simpleserial_put('r', 16, pt);
+ 251:KeccakFW.c    **** 	return 0x00;
+ 252:KeccakFW.c    **** }
+ 253:KeccakFW.c    **** 
+ 254:KeccakFW.c    **** 
+ 255:KeccakFW.c    **** uint8_t get_res(uint8_t* lane, uint8_t len)
+ 256:KeccakFW.c    **** {   
+ 257:KeccakFW.c    ****     int j, i;
+ 258:KeccakFW.c    ****     uint8_t bytes_st_msg[8];
+ 259:KeccakFW.c    **** 
+ 260:KeccakFW.c    ****     for(i=0; i<200; i++)
+ 261:KeccakFW.c    ****     {
+ 262:KeccakFW.c    ****         I0[i] = ISHARES[i+0];
+ 263:KeccakFW.c    ****         I1[i] = ISHARES[i+200];
+ 264:KeccakFW.c    ****         I2[i] = ISHARES[i+400];
+ 265:KeccakFW.c    ****     }
+ 266:KeccakFW.c    ****     bit_deinterleave(I0,s0);
+ 267:KeccakFW.c    ****     bit_deinterleave(I1,s1);
+ 268:KeccakFW.c    ****     bit_deinterleave(I2,s2);
+ 269:KeccakFW.c    ****     
+ 270:KeccakFW.c    ****     unmask_state();
+ 271:KeccakFW.c    ****     for(i=0;i<25;i++)
+ 272:KeccakFW.c    ****     {
+ 273:KeccakFW.c    ****         for(j=0;j<8;j++)
+ 274:KeccakFW.c    ****         {
+ 275:KeccakFW.c    ****             bytes_st[i][j] = rec[0+8*i+j];
+ 276:KeccakFW.c    ****         }
+ 277:KeccakFW.c    ****     }
+ 278:KeccakFW.c    **** 
+ 279:KeccakFW.c    ****     i=(int)lane[0];
+ 280:KeccakFW.c    ****     for(j=0;j<8;j++)
+ 281:KeccakFW.c    ****     {
+ 282:KeccakFW.c    ****         bytes_st_msg[j] = bytes_st[i][j];
+ 283:KeccakFW.c    ****     }    
+ 284:KeccakFW.c    **** 
+ 285:KeccakFW.c    ****     simpleserial_put('m', 8, bytes_st_msg);
+ 286:KeccakFW.c    **** 	return 0x00;
+ 287:KeccakFW.c    **** }
+ 288:KeccakFW.c    **** 
+ 289:KeccakFW.c    **** uint8_t get_cycles(uint8_t* cmd, uint8_t len)
+ 290:KeccakFW.c    **** {   
+  81              		.loc 1 290 1 is_stmt 1 view -0
+  82              		.cfi_startproc
+  83              		@ args = 0, pretend = 0, frame = 0
+  84              		@ frame_needed = 0, uses_anonymous_args = 0
+ 291:KeccakFW.c    ****     num_cycles_bytes[0] = (uint8_t)(delta & 0xFF);        
+  85              		.loc 1 291 5 view .LVU12
+  86              		.loc 1 291 27 is_stmt 0 view .LVU13
+  87 0000 084A     		ldr	r2, .L7
+ 290:KeccakFW.c    ****     num_cycles_bytes[0] = (uint8_t)(delta & 0xFF);        
+  88              		.loc 1 290 1 view .LVU14
+  89 0002 08B5     		push	{r3, lr}
+  90              	.LCFI1:
+  91              		.cfi_def_cfa_offset 8
+  92              		.cfi_offset 3, -8
+  93              		.cfi_offset 14, -4
+  94              		.loc 1 291 27 view .LVU15
+  95 0004 5368     		ldr	r3, [r2, #4]
+  96 0006 1372     		strb	r3, [r2, #8]
+ 292:KeccakFW.c    ****     num_cycles_bytes[1] = (uint8_t)((delta >> 8) & 0xFF);
+  97              		.loc 1 292 5 is_stmt 1 view .LVU16
+  98              		.loc 1 292 44 is_stmt 0 view .LVU17
+  99 0008 190A     		lsrs	r1, r3, #8
+ 100              	.LVL5:
+ 101              		.loc 1 292 27 view .LVU18
+ 102 000a 5172     		strb	r1, [r2, #9]
+ 293:KeccakFW.c    ****     num_cycles_bytes[2] = (uint8_t)((delta >> 16) & 0xFF);
+ 103              		.loc 1 293 5 is_stmt 1 view .LVU19
+ 104              		.loc 1 293 44 is_stmt 0 view .LVU20
+ 105 000c 190C     		lsrs	r1, r3, #16
+ 294:KeccakFW.c    ****     num_cycles_bytes[3] = (uint8_t)((delta >> 24) & 0xFF); 
+ 106              		.loc 1 294 44 view .LVU21
+ 107 000e 1B0E     		lsrs	r3, r3, #24
+ 293:KeccakFW.c    ****     num_cycles_bytes[2] = (uint8_t)((delta >> 16) & 0xFF);
+ 108              		.loc 1 293 27 view .LVU22
+ 109 0010 9172     		strb	r1, [r2, #10]
+ 110              		.loc 1 294 5 is_stmt 1 view .LVU23
+ 111              		.loc 1 294 27 is_stmt 0 view .LVU24
+ 112 0012 D372     		strb	r3, [r2, #11]
+ 295:KeccakFW.c    **** 	simpleserial_put('r', 4, num_cycles_bytes);
+ 113              		.loc 1 295 2 is_stmt 1 view .LVU25
+ 114 0014 0421     		movs	r1, #4
+ 115 0016 0832     		adds	r2, r2, #8
+ 116 0018 7220     		movs	r0, #114
+ 117              	.LVL6:
+ 118              		.loc 1 295 2 is_stmt 0 view .LVU26
+ 119 001a FFF7FEFF 		bl	simpleserial_put
+ 120              	.LVL7:
+ 296:KeccakFW.c    **** 	return 0x00;
+ 121              		.loc 1 296 2 is_stmt 1 view .LVU27
+ 297:KeccakFW.c    **** }
+ 122              		.loc 1 297 1 is_stmt 0 view .LVU28
+ 123 001e 0020     		movs	r0, #0
+ 124 0020 08BD     		pop	{r3, pc}
+ 125              	.L8:
+ 126 0022 00BF     		.align	2
+ 127              	.L7:
+ 128 0024 00000000 		.word	.LANCHOR0
+ 129              		.cfi_endproc
+ 130              	.LFE14:
+ 132              		.section	.text.prng_init,"ax",%progbits
+ 133              		.align	1
+ 134              		.global	prng_init
+ 135              		.syntax unified
+ 136              		.thumb
+ 137              		.thumb_func
+ 139              	prng_init:
+ 140              	.LVL8:
+ 141              	.LFB4:
+  91:KeccakFW.c    ****     prng.state[0] = chacha20_constants[0];
+ 142              		.loc 1 91 40 is_stmt 1 view -0
+ 143              		.cfi_startproc
+ 144              		@ args = 0, pretend = 0, frame = 0
+ 145              		@ frame_needed = 0, uses_anonymous_args = 0
+  92:KeccakFW.c    ****     prng.state[1] = chacha20_constants[1];
+ 146              		.loc 1 92 5 view .LVU30
+  92:KeccakFW.c    ****     prng.state[1] = chacha20_constants[1];
+ 147              		.loc 1 92 19 is_stmt 0 view .LVU31
+ 148 0000 154B     		ldr	r3, .L12
+  93:KeccakFW.c    ****     prng.state[2] = chacha20_constants[2];
+ 149              		.loc 1 93 19 view .LVU32
+ 150 0002 1649     		ldr	r1, .L12+4
+ 151 0004 164A     		ldr	r2, .L12+8
+  91:KeccakFW.c    ****     prng.state[0] = chacha20_constants[0];
+ 152              		.loc 1 91 40 view .LVU33
+ 153 0006 30B5     		push	{r4, r5, lr}
+ 154              	.LCFI2:
+ 155              		.cfi_def_cfa_offset 12
+ 156              		.cfi_offset 4, -12
+ 157              		.cfi_offset 5, -8
+ 158              		.cfi_offset 14, -4
+  93:KeccakFW.c    ****     prng.state[2] = chacha20_constants[2];
+ 159              		.loc 1 93 19 view .LVU34
+ 160 0008 C3E90312 		strd	r1, r2, [r3, #12]
+  94:KeccakFW.c    ****     prng.state[3] = chacha20_constants[3];
+ 161              		.loc 1 94 5 is_stmt 1 view .LVU35
+  94:KeccakFW.c    ****     prng.state[3] = chacha20_constants[3];
+ 162              		.loc 1 94 19 is_stmt 0 view .LVU36
+ 163 000c 154A     		ldr	r2, .L12+12
+ 164 000e 5A61     		str	r2, [r3, #20]
+  95:KeccakFW.c    **** 
+ 165              		.loc 1 95 5 is_stmt 1 view .LVU37
+  95:KeccakFW.c    **** 
+ 166              		.loc 1 95 19 is_stmt 0 view .LVU38
+ 167 0010 A2F16462 		sub	r2, r2, #239075328
+ 168 0014 1946     		mov	r1, r3
+ 169 0016 A2F5E332 		sub	r2, r2, #116224
+ 170 001a A2F5DF72 		sub	r2, r2, #446
+ 171 001e 41F8182F 		str	r2, [r1, #24]!
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 172              		.loc 1 97 5 is_stmt 1 view .LVU39
+ 173              	.LBB2:
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 174              		.loc 1 97 10 view .LVU40
+ 175              	.LVL9:
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 176              		.loc 1 97 23 discriminator 1 view .LVU41
+ 177 0022 00F12004 		add	r4, r0, #32
+ 178              	.LVL10:
+ 179              	.L10:
+  98:KeccakFW.c    ****             ((uint32_t)seed[i*4]) |
+ 180              		.loc 1 98 9 view .LVU42
+ 101:KeccakFW.c    ****             ((uint32_t)seed[i*4+3] << 24);
+ 181              		.loc 1 101 14 is_stmt 0 view .LVU43
+ 182 0026 8278     		ldrb	r2, [r0, #2]	@ zero_extendqisi2
+ 100:KeccakFW.c    ****             ((uint32_t)seed[i*4+2] << 16) |
+ 183              		.loc 1 100 14 view .LVU44
+ 184 0028 4578     		ldrb	r5, [r0, #1]	@ zero_extendqisi2
+ 101:KeccakFW.c    ****             ((uint32_t)seed[i*4+3] << 24);
+ 185              		.loc 1 101 36 view .LVU45
+ 186 002a 1204     		lsls	r2, r2, #16
+ 100:KeccakFW.c    ****             ((uint32_t)seed[i*4+2] << 16) |
+ 187              		.loc 1 100 42 view .LVU46
+ 188 002c 42EA0522 		orr	r2, r2, r5, lsl #8
+  99:KeccakFW.c    ****             ((uint32_t)seed[i*4+1] << 8) |
+ 189              		.loc 1 99 14 view .LVU47
+ 190 0030 0578     		ldrb	r5, [r0]	@ zero_extendqisi2
+ 100:KeccakFW.c    ****             ((uint32_t)seed[i*4+2] << 16) |
+ 191              		.loc 1 100 42 view .LVU48
+ 192 0032 2A43     		orrs	r2, r2, r5
+ 102:KeccakFW.c    ****     }
+ 193              		.loc 1 102 14 view .LVU49
+ 194 0034 C578     		ldrb	r5, [r0, #3]	@ zero_extendqisi2
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 195              		.loc 1 97 23 discriminator 1 view .LVU50
+ 196 0036 0430     		adds	r0, r0, #4
+ 101:KeccakFW.c    ****             ((uint32_t)seed[i*4+3] << 24);
+ 197              		.loc 1 101 43 view .LVU51
+ 198 0038 42EA0562 		orr	r2, r2, r5, lsl #24
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 199              		.loc 1 97 23 discriminator 1 view .LVU52
+ 200 003c 8442     		cmp	r4, r0
+  98:KeccakFW.c    ****             ((uint32_t)seed[i*4]) |
+ 201              		.loc 1 98 27 view .LVU53
+ 202 003e 41F8042F 		str	r2, [r1, #4]!
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 203              		.loc 1 97 29 is_stmt 1 discriminator 3 view .LVU54
+  97:KeccakFW.c    ****         prng.state[4 + i] =
+ 204              		.loc 1 97 23 discriminator 1 view .LVU55
+ 205 0042 F0D1     		bne	.L10
+ 206              	.LBE2:
+ 105:KeccakFW.c    ****     prng.state[13] = 0; prng.state[14] = 0; prng.state[15] = 0; // nonce
+ 207              		.loc 1 105 5 view .LVU56
+ 105:KeccakFW.c    ****     prng.state[13] = 0; prng.state[14] = 0; prng.state[15] = 0; // nonce
+ 208              		.loc 1 105 20 is_stmt 0 view .LVU57
+ 209 0044 0022     		movs	r2, #0
+ 106:KeccakFW.c    **** 
+ 210              		.loc 1 106 20 view .LVU58
+ 211 0046 C3E90F22 		strd	r2, r2, [r3, #60]
+ 106:KeccakFW.c    **** 
+ 212              		.loc 1 106 25 is_stmt 1 view .LVU59
+ 106:KeccakFW.c    **** 
+ 213              		.loc 1 106 60 is_stmt 0 view .LVU60
+ 214 004a C3E91122 		strd	r2, r2, [r3, #68]
+ 108:KeccakFW.c    **** }
+ 215              		.loc 1 108 5 is_stmt 1 view .LVU61
+ 108:KeccakFW.c    **** }
+ 216              		.loc 1 108 24 is_stmt 0 view .LVU62
+ 217 004e 4022     		movs	r2, #64
+ 218 0050 C3F88C20 		str	r2, [r3, #140]
+ 109:KeccakFW.c    **** 
+ 219              		.loc 1 109 1 view .LVU63
+ 220 0054 30BD     		pop	{r4, r5, pc}
+ 221              	.LVL11:
+ 222              	.L13:
+ 109:KeccakFW.c    **** 
+ 223              		.loc 1 109 1 view .LVU64
+ 224 0056 00BF     		.align	2
+ 225              	.L12:
+ 226 0058 00000000 		.word	.LANCHOR0
+ 227 005c 65787061 		.word	1634760805
+ 228 0060 6E642033 		.word	857760878
+ 229 0064 322D6279 		.word	2036477234
+ 230              		.cfi_endproc
+ 231              	.LFE4:
+ 233              		.section	.text.get_seed,"ax",%progbits
+ 234              		.align	1
+ 235              		.global	get_seed
+ 236              		.syntax unified
+ 237              		.thumb
+ 238              		.thumb_func
+ 240              	get_seed:
+ 241              	.LVL12:
+ 242              	.LFB10:
+ 204:KeccakFW.c    ****     int i;
+ 243              		.loc 1 204 1 is_stmt 1 view -0
+ 244              		.cfi_startproc
+ 245              		@ args = 0, pretend = 0, frame = 0
+ 246              		@ frame_needed = 0, uses_anonymous_args = 0
+ 205:KeccakFW.c    ****     for(i=0; i<16; i++)
+ 247              		.loc 1 205 5 view .LVU66
+ 206:KeccakFW.c    ****     {
+ 248              		.loc 1 206 5 view .LVU67
+ 206:KeccakFW.c    ****     {
+ 249              		.loc 1 206 15 discriminator 1 view .LVU68
+ 208:KeccakFW.c    ****     }
+ 250              		.loc 1 208 38 is_stmt 0 view .LVU69
+ 251 0000 1249     		ldr	r1, .L18
+ 252              	.LVL13:
+ 208:KeccakFW.c    ****     }
+ 253              		.loc 1 208 38 view .LVU70
+ 254 0002 D1F89030 		ldr	r3, [r1, #144]
+ 204:KeccakFW.c    ****     int i;
+ 255              		.loc 1 204 1 view .LVU71
+ 256 0006 70B5     		push	{r4, r5, r6, lr}
+ 257              	.LCFI3:
+ 258              		.cfi_def_cfa_offset 16
+ 259              		.cfi_offset 4, -16
+ 260              		.cfi_offset 5, -12
+ 261              		.cfi_offset 6, -8
+ 262              		.cfi_offset 14, -4
+ 263 0008 01F19402 		add	r2, r1, #148
+ 204:KeccakFW.c    ****     int i;
+ 264              		.loc 1 204 1 view .LVU72
+ 265 000c 0446     		mov	r4, r0
+ 266 000e 02EB0312 		add	r2, r2, r3, lsl #4
+ 267 0012 0138     		subs	r0, r0, #1
+ 268              	.LVL14:
+ 204:KeccakFW.c    ****     int i;
+ 269              		.loc 1 204 1 view .LVU73
+ 270 0014 04F10F05 		add	r5, r4, #15
+ 271              	.LVL15:
+ 272              	.L15:
+ 208:KeccakFW.c    ****     }
+ 273              		.loc 1 208 9 is_stmt 1 view .LVU74
+ 208:KeccakFW.c    ****     }
+ 274              		.loc 1 208 50 is_stmt 0 view .LVU75
+ 275 0018 10F8016F 		ldrb	r6, [r0, #1]!	@ zero_extendqisi2
+ 208:KeccakFW.c    ****     }
+ 276              		.loc 1 208 44 view .LVU76
+ 277 001c 02F8016B 		strb	r6, [r2], #1
+ 206:KeccakFW.c    ****     {
+ 278              		.loc 1 206 21 is_stmt 1 discriminator 3 view .LVU77
+ 206:KeccakFW.c    ****     {
+ 279              		.loc 1 206 15 discriminator 1 view .LVU78
+ 280 0020 A842     		cmp	r0, r5
+ 281 0022 F9D1     		bne	.L15
+ 210:KeccakFW.c    ****     if(seed_counter == 0)
+ 282              		.loc 1 210 5 view .LVU79
+ 210:KeccakFW.c    ****     if(seed_counter == 0)
+ 283              		.loc 1 210 39 is_stmt 0 view .LVU80
+ 284 0024 0133     		adds	r3, r3, #1
+ 285 0026 03F00103 		and	r3, r3, #1
+ 286 002a 1A46     		mov	r2, r3
+ 287 002c 48BF     		it	mi
+ 288 002e 5A42     		rsbmi	r2, r3, #0
+ 210:KeccakFW.c    ****     if(seed_counter == 0)
+ 289              		.loc 1 210 18 view .LVU81
+ 290 0030 C1F89020 		str	r2, [r1, #144]
+ 211:KeccakFW.c    ****     {
+ 291              		.loc 1 211 5 is_stmt 1 view .LVU82
+ 211:KeccakFW.c    ****     {
+ 292              		.loc 1 211 7 is_stmt 0 view .LVU83
+ 293 0034 13B9     		cbnz	r3, .L16
+ 213:KeccakFW.c    ****     }
+ 294              		.loc 1 213 9 is_stmt 1 view .LVU84
+ 295 0036 0648     		ldr	r0, .L18+4
+ 296 0038 FFF7FEFF 		bl	prng_init
+ 297              	.LVL16:
+ 298              	.L16:
+ 215:KeccakFW.c    ****     return 0x00;
+ 299              		.loc 1 215 5 view .LVU85
+ 300 003c 2246     		mov	r2, r4
+ 301 003e 1021     		movs	r1, #16
+ 302 0040 7220     		movs	r0, #114
+ 303 0042 FFF7FEFF 		bl	simpleserial_put
+ 304              	.LVL17:
+ 216:KeccakFW.c    **** }
+ 305              		.loc 1 216 5 view .LVU86
+ 217:KeccakFW.c    **** 
+ 306              		.loc 1 217 1 is_stmt 0 view .LVU87
+ 307 0046 0020     		movs	r0, #0
+ 308 0048 70BD     		pop	{r4, r5, r6, pc}
+ 309              	.LVL18:
+ 310              	.L19:
+ 217:KeccakFW.c    **** 
+ 311              		.loc 1 217 1 view .LVU88
+ 312 004a 00BF     		.align	2
+ 313              	.L18:
+ 314 004c 00000000 		.word	.LANCHOR0
+ 315 0050 94000000 		.word	.LANCHOR0+148
+ 316              		.cfi_endproc
+ 317              	.LFE10:
+ 319              		.section	.text.prng_get_byte,"ax",%progbits
+ 320              		.align	1
+ 321              		.global	prng_get_byte
+ 322              		.syntax unified
+ 323              		.thumb
+ 324              		.thumb_func
+ 326              	prng_get_byte:
+ 327              	.LFB6:
+ 117:KeccakFW.c    ****     if (prng.keystream_pos >= CHACHA20_BLOCK_SIZE) {
+ 328              		.loc 1 117 25 is_stmt 1 view -0
+ 329              		.cfi_startproc
+ 330              		@ args = 0, pretend = 0, frame = 96
+ 331              		@ frame_needed = 0, uses_anonymous_args = 0
+ 118:KeccakFW.c    ****         prng_generate_block();
+ 332              		.loc 1 118 5 view .LVU90
+ 117:KeccakFW.c    ****     if (prng.keystream_pos >= CHACHA20_BLOCK_SIZE) {
+ 333              		.loc 1 117 25 is_stmt 0 view .LVU91
+ 334 0000 2DE9F04F 		push	{r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 335              	.LCFI4:
+ 336              		.cfi_def_cfa_offset 36
+ 337              		.cfi_offset 4, -36
+ 338              		.cfi_offset 5, -32
+ 339              		.cfi_offset 6, -28
+ 340              		.cfi_offset 7, -24
+ 341              		.cfi_offset 8, -20
+ 342              		.cfi_offset 9, -16
+ 343              		.cfi_offset 10, -12
+ 344              		.cfi_offset 11, -8
+ 345              		.cfi_offset 14, -4
+ 118:KeccakFW.c    ****         prng_generate_block();
+ 346              		.loc 1 118 13 view .LVU92
+ 347 0004 804C     		ldr	r4, .L26
+ 118:KeccakFW.c    ****         prng_generate_block();
+ 348              		.loc 1 118 8 view .LVU93
+ 349 0006 D4F88C30 		ldr	r3, [r4, #140]
+ 350 000a 3F2B     		cmp	r3, #63
+ 117:KeccakFW.c    ****     if (prng.keystream_pos >= CHACHA20_BLOCK_SIZE) {
+ 351              		.loc 1 117 25 view .LVU94
+ 352 000c 99B0     		sub	sp, sp, #100
+ 353              	.LCFI5:
+ 354              		.cfi_def_cfa_offset 136
+ 118:KeccakFW.c    ****         prng_generate_block();
+ 355              		.loc 1 118 8 view .LVU95
+ 356 000e 40F3EE80 		ble	.L21
+ 119:KeccakFW.c    ****     }
+ 357              		.loc 1 119 9 is_stmt 1 view .LVU96
+ 358              	.LBB11:
+ 359              	.LBI11:
+ 111:KeccakFW.c    ****     chacha20_block((uint32_t*)prng.keystream, prng.state);
+ 360              		.loc 1 111 13 view .LVU97
+ 361              	.LBB12:
+ 112:KeccakFW.c    ****     prng.state[12]++;
+ 362              		.loc 1 112 5 view .LVU98
+ 363              	.LBB13:
+ 364              	.LBI13:
+  70:KeccakFW.c    ****     uint32_t x[16];
+ 365              		.loc 1 70 13 view .LVU99
+ 366              	.LVL19:
+ 367              	.LBB14:
+  71:KeccakFW.c    ****     memcpy(x, in, sizeof(uint32_t) * 16);
+ 368              		.loc 1 71 5 view .LVU100
+  72:KeccakFW.c    **** 
+ 369              		.loc 1 72 5 view .LVU101
+ 370 0012 0C34     		adds	r4, r4, #12
+ 371 0014 0FCC     		ldmia	r4!, {r0, r1, r2, r3}
+ 372 0016 08AD     		add	r5, sp, #32
+ 373 0018 0FC5     		stmia	r5!, {r0, r1, r2, r3}
+ 374 001a 0FCC     		ldmia	r4!, {r0, r1, r2, r3}
+ 375 001c 0FC5     		stmia	r5!, {r0, r1, r2, r3}
+ 376 001e 0FCC     		ldmia	r4!, {r0, r1, r2, r3}
+ 377 0020 0FC5     		stmia	r5!, {r0, r1, r2, r3}
+ 378 0022 94E80F00 		ldm	r4, {r0, r1, r2, r3}
+ 379 0026 85E80F00 		stm	r5, {r0, r1, r2, r3}
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 380              		.loc 1 74 5 view .LVU102
+ 381              	.LBB15:
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 382              		.loc 1 74 10 view .LVU103
+ 383              	.LVL20:
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 384              		.loc 1 74 23 discriminator 1 view .LVU104
+ 385 002a DDF820C0 		ldr	ip, [sp, #32]
+ 386 002e 129B     		ldr	r3, [sp, #72]
+ 387 0030 0193     		str	r3, [sp, #4]
+ 388 0032 179B     		ldr	r3, [sp, #92]
+ 389 0034 0393     		str	r3, [sp, #12]
+ 390 0036 139B     		ldr	r3, [sp, #76]
+ 391 0038 0293     		str	r3, [sp, #8]
+ 392 003a 8246     		mov	r10, r0
+ 393 003c 8946     		mov	r9, r1
+ 394 003e 9046     		mov	r8, r2
+ 395              	.LBE15:
+  72:KeccakFW.c    **** 
+ 396              		.loc 1 72 5 is_stmt 0 view .LVU105
+ 397 0040 0A23     		movs	r3, #10
+ 398 0042 DDF830B0 		ldr	fp, [sp, #48]
+ 399 0046 DDF840E0 		ldr	lr, [sp, #64]
+ 400 004a 099F     		ldr	r7, [sp, #36]
+ 401 004c 0D98     		ldr	r0, [sp, #52]
+ 402 004e 119C     		ldr	r4, [sp, #68]
+ 403 0050 0A9E     		ldr	r6, [sp, #40]
+ 404 0052 0E99     		ldr	r1, [sp, #56]
+ 405 0054 0B9D     		ldr	r5, [sp, #44]
+ 406 0056 0F9A     		ldr	r2, [sp, #60]
+ 407 0058 0493     		str	r3, [sp, #16]
+ 408              	.LVL21:
+ 409              	.L22:
+ 410              	.LBB16:
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 411              		.loc 1 75 9 is_stmt 1 view .LVU106
+ 412 005a DC44     		add	ip, ip, fp
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 413              		.loc 1 75 9 view .LVU107
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 414              		.loc 1 75 9 view .LVU108
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 415              		.loc 1 75 9 view .LVU109
+ 416 005c 8AEA0C0A 		eor	r10, r10, ip
+ 417 0060 0EEB3A4E 		add	lr, lr, r10, ror #16
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 418              		.loc 1 75 9 view .LVU110
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 419              		.loc 1 75 9 view .LVU111
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 420              		.loc 1 75 9 view .LVU112
+ 421 0064 8EEA0B03 		eor	r3, lr, fp
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 422              		.loc 1 76 9 is_stmt 0 view .LVU113
+ 423 0068 0744     		add	r7, r7, r0
+ 424 006a 87EA0909 		eor	r9, r7, r9
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 425              		.loc 1 75 9 view .LVU114
+ 426 006e 0CEB335C 		add	ip, ip, r3, ror #20
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 427              		.loc 1 75 9 is_stmt 1 view .LVU115
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 428              		.loc 1 75 9 view .LVU116
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 429              		.loc 1 75 9 view .LVU117
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 430              		.loc 1 76 9 is_stmt 0 view .LVU118
+ 431 0072 04EB3944 		add	r4, r4, r9, ror #16
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 432              		.loc 1 75 9 view .LVU119
+ 433 0076 8CEA3A4A 		eor	r10, ip, r10, ror #16
+ 434 007a 0EEB3A6E 		add	lr, lr, r10, ror #24
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 435              		.loc 1 76 9 view .LVU120
+ 436 007e 6040     		eors	r0, r0, r4
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 437              		.loc 1 75 9 view .LVU121
+ 438 0080 8EEA3353 		eor	r3, lr, r3, ror #20
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 439              		.loc 1 76 9 view .LVU122
+ 440 0084 07EB3057 		add	r7, r7, r0, ror #20
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 441              		.loc 1 75 9 view .LVU123
+ 442 0088 0693     		str	r3, [sp, #24]
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 443              		.loc 1 76 9 view .LVU124
+ 444 008a 87EA3943 		eor	r3, r7, r9, ror #16
+ 445 008e 04EB336B 		add	fp, r4, r3, ror #24
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 446              		.loc 1 77 9 view .LVU125
+ 447 0092 0E44     		add	r6, r6, r1
+ 448 0094 019C     		ldr	r4, [sp, #4]
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 449              		.loc 1 75 9 view .LVU126
+ 450 0096 CDF814E0 		str	lr, [sp, #20]
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 451              		.loc 1 75 9 is_stmt 1 view .LVU127
+  75:KeccakFW.c    ****         QUARTERROUND(x[1], x[5], x[9], x[13])
+ 452              		.loc 1 75 9 view .LVU128
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 453              		.loc 1 76 9 view .LVU129
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 454              		.loc 1 76 9 view .LVU130
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 455              		.loc 1 76 9 view .LVU131
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 456              		.loc 1 76 9 view .LVU132
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 457              		.loc 1 76 9 view .LVU133
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 458              		.loc 1 76 9 view .LVU134
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 459              		.loc 1 76 9 view .LVU135
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 460              		.loc 1 76 9 view .LVU136
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 461              		.loc 1 76 9 view .LVU137
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 462              		.loc 1 76 9 view .LVU138
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 463              		.loc 1 76 9 view .LVU139
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 464              		.loc 1 76 9 view .LVU140
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 465              		.loc 1 77 9 view .LVU141
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 466              		.loc 1 77 9 view .LVU142
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 467              		.loc 1 77 9 view .LVU143
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 468              		.loc 1 77 9 view .LVU144
+ 469 009a 86EA0808 		eor	r8, r6, r8
+ 470 009e 04EB384E 		add	lr, r4, r8, ror #16
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 471              		.loc 1 77 9 view .LVU145
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 472              		.loc 1 77 9 view .LVU146
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 473              		.loc 1 77 9 view .LVU147
+ 474 00a2 8EEA0101 		eor	r1, lr, r1
+ 475 00a6 06EB3156 		add	r6, r6, r1, ror #20
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 476              		.loc 1 77 9 view .LVU148
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 477              		.loc 1 77 9 view .LVU149
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 478              		.loc 1 77 9 view .LVU150
+ 479 00aa 86EA3844 		eor	r4, r6, r8, ror #16
+ 480 00ae 0EEB346E 		add	lr, lr, r4, ror #24
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 481              		.loc 1 77 9 view .LVU151
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 482              		.loc 1 77 9 view .LVU152
+  78:KeccakFW.c    **** 
+ 483              		.loc 1 78 9 view .LVU153
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 484              		.loc 1 77 9 is_stmt 0 view .LVU154
+ 485 00b2 0794     		str	r4, [sp, #28]
+  78:KeccakFW.c    **** 
+ 486              		.loc 1 78 9 view .LVU155
+ 487 00b4 039C     		ldr	r4, [sp, #12]
+ 488 00b6 1544     		add	r5, r5, r2
+  78:KeccakFW.c    **** 
+ 489              		.loc 1 78 9 is_stmt 1 view .LVU156
+  78:KeccakFW.c    **** 
+ 490              		.loc 1 78 9 view .LVU157
+  78:KeccakFW.c    **** 
+ 491              		.loc 1 78 9 view .LVU158
+ 492 00b8 85EA0408 		eor	r8, r5, r4
+ 493 00bc 029C     		ldr	r4, [sp, #8]
+ 494 00be 04EB3844 		add	r4, r4, r8, ror #16
+  78:KeccakFW.c    **** 
+ 495              		.loc 1 78 9 view .LVU159
+  78:KeccakFW.c    **** 
+ 496              		.loc 1 78 9 view .LVU160
+  78:KeccakFW.c    **** 
+ 497              		.loc 1 78 9 view .LVU161
+ 498 00c2 6240     		eors	r2, r2, r4
+  76:KeccakFW.c    ****         QUARTERROUND(x[2], x[6], x[10], x[14])
+ 499              		.loc 1 76 9 is_stmt 0 view .LVU162
+ 500 00c4 8BEA3050 		eor	r0, fp, r0, ror #20
+  78:KeccakFW.c    **** 
+ 501              		.loc 1 78 9 view .LVU163
+ 502 00c8 05EB3255 		add	r5, r5, r2, ror #20
+  78:KeccakFW.c    **** 
+ 503              		.loc 1 78 9 is_stmt 1 view .LVU164
+  78:KeccakFW.c    **** 
+ 504              		.loc 1 78 9 view .LVU165
+  78:KeccakFW.c    **** 
+ 505              		.loc 1 78 9 view .LVU166
+ 506 00cc 85EA3848 		eor	r8, r5, r8, ror #16
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 507              		.loc 1 80 9 is_stmt 0 view .LVU167
+ 508 00d0 0CEB706C 		add	ip, ip, r0, ror #25
+  77:KeccakFW.c    ****         QUARTERROUND(x[3], x[7], x[11], x[15])
+ 509              		.loc 1 77 9 view .LVU168
+ 510 00d4 8EEA3151 		eor	r1, lr, r1, ror #20
+  78:KeccakFW.c    **** 
+ 511              		.loc 1 78 9 view .LVU169
+ 512 00d8 04EB3864 		add	r4, r4, r8, ror #24
+  78:KeccakFW.c    **** 
+ 513              		.loc 1 78 9 is_stmt 1 view .LVU170
+  78:KeccakFW.c    **** 
+ 514              		.loc 1 78 9 view .LVU171
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 515              		.loc 1 80 9 view .LVU172
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 516              		.loc 1 80 9 view .LVU173
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 517              		.loc 1 80 9 view .LVU174
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 518              		.loc 1 80 9 view .LVU175
+ 519 00dc 8CEA3868 		eor	r8, ip, r8, ror #24
+ 520 00e0 0EEB384E 		add	lr, lr, r8, ror #16
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 521              		.loc 1 80 9 view .LVU176
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 522              		.loc 1 80 9 view .LVU177
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 523              		.loc 1 80 9 view .LVU178
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 524              		.loc 1 81 9 is_stmt 0 view .LVU179
+ 525 00e4 07EB7167 		add	r7, r7, r1, ror #25
+ 526 00e8 87EA3A6A 		eor	r10, r7, r10, ror #24
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 527              		.loc 1 80 9 view .LVU180
+ 528 00ec 8EEA7060 		eor	r0, lr, r0, ror #25
+  78:KeccakFW.c    **** 
+ 529              		.loc 1 78 9 view .LVU181
+ 530 00f0 84EA3252 		eor	r2, r4, r2, ror #20
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 531              		.loc 1 80 9 view .LVU182
+ 532 00f4 0CEB305C 		add	ip, ip, r0, ror #20
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 533              		.loc 1 80 9 is_stmt 1 view .LVU183
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 534              		.loc 1 80 9 view .LVU184
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 535              		.loc 1 81 9 is_stmt 0 view .LVU185
+ 536 00f8 04EB3A44 		add	r4, r4, r10, ror #16
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 537              		.loc 1 80 9 view .LVU186
+ 538 00fc 8CEA3848 		eor	r8, ip, r8, ror #16
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 539              		.loc 1 81 9 view .LVU187
+ 540 0100 84EA7161 		eor	r1, r4, r1, ror #25
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 541              		.loc 1 80 9 view .LVU188
+ 542 0104 0EEB386E 		add	lr, lr, r8, ror #24
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 543              		.loc 1 81 9 view .LVU189
+ 544 0108 07EB3157 		add	r7, r7, r1, ror #20
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 545              		.loc 1 80 9 view .LVU190
+ 546 010c 8EEA3050 		eor	r0, lr, r0, ror #20
+ 547 0110 CDF804E0 		str	lr, [sp, #4]
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 548              		.loc 1 81 9 view .LVU191
+ 549 0114 87EA3A4E 		eor	lr, r7, r10, ror #16
+ 550 0118 04EB3E64 		add	r4, r4, lr, ror #24
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 551              		.loc 1 82 9 view .LVU192
+ 552 011c 06EB7266 		add	r6, r6, r2, ror #25
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 553              		.loc 1 81 9 view .LVU193
+ 554 0120 84EA3151 		eor	r1, r4, r1, ror #20
+ 555 0124 0294     		str	r4, [sp, #8]
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 556              		.loc 1 82 9 view .LVU194
+ 557 0126 059C     		ldr	r4, [sp, #20]
+ 558 0128 86EA3363 		eor	r3, r6, r3, ror #24
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 559              		.loc 1 81 9 view .LVU195
+ 560 012c 4FEA3E6A 		ror	r10, lr, #24
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 561              		.loc 1 82 9 view .LVU196
+ 562 0130 04EB334E 		add	lr, r4, r3, ror #16
+ 563 0134 8EEA7262 		eor	r2, lr, r2, ror #25
+ 564 0138 06EB3256 		add	r6, r6, r2, ror #20
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 565              		.loc 1 80 9 view .LVU197
+ 566 013c 4FEA3869 		ror	r9, r8, #24
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 567              		.loc 1 82 9 view .LVU198
+ 568 0140 86EA3343 		eor	r3, r6, r3, ror #16
+ 569 0144 0EEB336E 		add	lr, lr, r3, ror #24
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 570              		.loc 1 80 9 view .LVU199
+ 571 0148 CDF80C90 		str	r9, [sp, #12]
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 572              		.loc 1 80 9 is_stmt 1 view .LVU200
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 573              		.loc 1 80 9 view .LVU201
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 574              		.loc 1 80 9 view .LVU202
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 575              		.loc 1 82 9 is_stmt 0 view .LVU203
+ 576 014c 4FEA3369 		ror	r9, r3, #24
+  83:KeccakFW.c    ****     }
+ 577              		.loc 1 83 9 view .LVU204
+ 578 0150 069B     		ldr	r3, [sp, #24]
+ 579 0152 05EB7365 		add	r5, r5, r3, ror #25
+ 580 0156 079B     		ldr	r3, [sp, #28]
+ 581 0158 85EA3364 		eor	r4, r5, r3, ror #24
+ 582 015c 069B     		ldr	r3, [sp, #24]
+ 583 015e 0BEB344B 		add	fp, fp, r4, ror #16
+ 584 0162 8BEA7363 		eor	r3, fp, r3, ror #25
+ 585 0166 05EB3355 		add	r5, r5, r3, ror #20
+ 586 016a 85EA3444 		eor	r4, r5, r4, ror #16
+ 587 016e 4FEA3468 		ror	r8, r4, #24
+ 588 0172 0BEB3464 		add	r4, fp, r4, ror #24
+ 589 0176 84EA3353 		eor	r3, r4, r3, ror #20
+ 590 017a 4FEA736B 		ror	fp, r3, #25
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 591              		.loc 1 74 23 discriminator 1 view .LVU205
+ 592 017e 049B     		ldr	r3, [sp, #16]
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 593              		.loc 1 82 9 view .LVU206
+ 594 0180 8EEA3252 		eor	r2, lr, r2, ror #20
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 595              		.loc 1 74 23 discriminator 1 view .LVU207
+ 596 0184 013B     		subs	r3, r3, #1
+  80:KeccakFW.c    ****         QUARTERROUND(x[1], x[6], x[11], x[12])
+ 597              		.loc 1 80 9 view .LVU208
+ 598 0186 4FEA7060 		ror	r0, r0, #25
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 599              		.loc 1 81 9 is_stmt 1 view .LVU209
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 600              		.loc 1 81 9 view .LVU210
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 601              		.loc 1 81 9 view .LVU211
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 602              		.loc 1 81 9 view .LVU212
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 603              		.loc 1 81 9 view .LVU213
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 604              		.loc 1 81 9 view .LVU214
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 605              		.loc 1 81 9 view .LVU215
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 606              		.loc 1 81 9 view .LVU216
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 607              		.loc 1 81 9 view .LVU217
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 608              		.loc 1 81 9 view .LVU218
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 609              		.loc 1 81 9 view .LVU219
+  81:KeccakFW.c    ****         QUARTERROUND(x[2], x[7], x[8], x[13])
+ 610              		.loc 1 81 9 view .LVU220
+ 611 018a 4FEA7161 		ror	r1, r1, #25
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 612              		.loc 1 82 9 view .LVU221
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 613              		.loc 1 82 9 view .LVU222
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 614              		.loc 1 82 9 view .LVU223
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 615              		.loc 1 82 9 view .LVU224
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 616              		.loc 1 82 9 view .LVU225
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 617              		.loc 1 82 9 view .LVU226
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 618              		.loc 1 82 9 view .LVU227
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 619              		.loc 1 82 9 view .LVU228
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 620              		.loc 1 82 9 view .LVU229
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 621              		.loc 1 82 9 view .LVU230
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 622              		.loc 1 82 9 view .LVU231
+  82:KeccakFW.c    ****         QUARTERROUND(x[3], x[4], x[9], x[14])
+ 623              		.loc 1 82 9 view .LVU232
+ 624 018e 4FEA7262 		ror	r2, r2, #25
+  83:KeccakFW.c    ****     }
+ 625              		.loc 1 83 9 view .LVU233
+  83:KeccakFW.c    ****     }
+ 626              		.loc 1 83 9 view .LVU234
+  83:KeccakFW.c    ****     }
+ 627              		.loc 1 83 9 view .LVU235
+  83:KeccakFW.c    ****     }
+ 628              		.loc 1 83 9 view .LVU236
+  83:KeccakFW.c    ****     }
+ 629              		.loc 1 83 9 view .LVU237
+  83:KeccakFW.c    ****     }
+ 630              		.loc 1 83 9 view .LVU238
+  83:KeccakFW.c    ****     }
+ 631              		.loc 1 83 9 view .LVU239
+  83:KeccakFW.c    ****     }
+ 632              		.loc 1 83 9 view .LVU240
+  83:KeccakFW.c    ****     }
+ 633              		.loc 1 83 9 view .LVU241
+  83:KeccakFW.c    ****     }
+ 634              		.loc 1 83 9 view .LVU242
+  83:KeccakFW.c    ****     }
+ 635              		.loc 1 83 9 view .LVU243
+  83:KeccakFW.c    ****     }
+ 636              		.loc 1 83 9 view .LVU244
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 637              		.loc 1 74 30 discriminator 3 view .LVU245
+ 638              	.LVL22:
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 639              		.loc 1 74 23 discriminator 1 view .LVU246
+ 640 0192 0493     		str	r3, [sp, #16]
+ 641              	.LVL23:
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 642              		.loc 1 74 23 is_stmt 0 discriminator 1 view .LVU247
+ 643 0194 7FF461AF 		bne	.L22
+ 644 0198 039B     		ldr	r3, [sp, #12]
+ 645              	.LVL24:
+  74:KeccakFW.c    ****         QUARTERROUND(x[0], x[4], x[8], x[12])
+ 646              		.loc 1 74 23 discriminator 1 view .LVU248
+ 647 019a 1793     		str	r3, [sp, #92]
+ 648 019c 019B     		ldr	r3, [sp, #4]
+ 649 019e 1293     		str	r3, [sp, #72]
+ 650 01a0 029B     		ldr	r3, [sp, #8]
+ 651 01a2 1393     		str	r3, [sp, #76]
+ 652 01a4 CDE90F2E 		strd	r2, lr, [sp, #60]
+ 653              	.LBE16:
+ 654              	.LBB17:
+  86:KeccakFW.c    ****         out[i] = x[i] + in[i];
+ 655              		.loc 1 86 14 view .LVU249
+ 656 01a8 049B     		ldr	r3, [sp, #16]
+ 657 01aa 184A     		ldr	r2, .L26+4
+ 658 01ac 0D90     		str	r0, [sp, #52]
+ 659 01ae CDF820C0 		str	ip, [sp, #32]
+ 660 01b2 0997     		str	r7, [sp, #36]
+ 661 01b4 CDF850A0 		str	r10, [sp, #80]
+ 662 01b8 0E91     		str	r1, [sp, #56]
+ 663 01ba 0A96     		str	r6, [sp, #40]
+ 664 01bc CDF85490 		str	r9, [sp, #84]
+ 665 01c0 0B95     		str	r5, [sp, #44]
+ 666 01c2 CDF85880 		str	r8, [sp, #88]
+ 667 01c6 1194     		str	r4, [sp, #68]
+ 668 01c8 CDF830B0 		str	fp, [sp, #48]
+ 669 01cc 08A8     		add	r0, sp, #32
+ 670              	.L23:
+ 671              	.LVL25:
+  87:KeccakFW.c    ****     }
+ 672              		.loc 1 87 9 is_stmt 1 view .LVU250
+  87:KeccakFW.c    ****     }
+ 673              		.loc 1 87 27 is_stmt 0 view .LVU251
+ 674 01ce 52F8044B 		ldr	r4, [r2], #4
+  87:KeccakFW.c    ****     }
+ 675              		.loc 1 87 19 view .LVU252
+ 676 01d2 50F8041B 		ldr	r1, [r0], #4
+  86:KeccakFW.c    ****         out[i] = x[i] + in[i];
+ 677              		.loc 1 86 30 discriminator 3 view .LVU253
+ 678 01d6 0133     		adds	r3, r3, #1
+ 679              	.LVL26:
+  87:KeccakFW.c    ****     }
+ 680              		.loc 1 87 23 view .LVU254
+ 681 01d8 2144     		add	r1, r1, r4
+  86:KeccakFW.c    ****         out[i] = x[i] + in[i];
+ 682              		.loc 1 86 23 discriminator 1 view .LVU255
+ 683 01da 102B     		cmp	r3, #16
+  87:KeccakFW.c    ****     }
+ 684              		.loc 1 87 16 view .LVU256
+ 685 01dc D163     		str	r1, [r2, #60]
+  86:KeccakFW.c    ****         out[i] = x[i] + in[i];
+ 686              		.loc 1 86 30 is_stmt 1 discriminator 3 view .LVU257
+ 687              	.LVL27:
+  86:KeccakFW.c    ****         out[i] = x[i] + in[i];
+ 688              		.loc 1 86 23 discriminator 1 view .LVU258
+ 689 01de F6D1     		bne	.L23
+ 690              	.LVL28:
+  86:KeccakFW.c    ****         out[i] = x[i] + in[i];
+ 691              		.loc 1 86 23 is_stmt 0 discriminator 1 view .LVU259
+ 692              	.LBE17:
+ 693              	.LBE14:
+ 694              	.LBE13:
+ 113:KeccakFW.c    ****     prng.keystream_pos = 0;
+ 695              		.loc 1 113 5 is_stmt 1 view .LVU260
+ 113:KeccakFW.c    ****     prng.keystream_pos = 0;
+ 696              		.loc 1 113 19 is_stmt 0 view .LVU261
+ 697 01e0 094B     		ldr	r3, .L26
+ 698 01e2 DA6B     		ldr	r2, [r3, #60]
+ 699 01e4 0132     		adds	r2, r2, #1
+ 700 01e6 DA63     		str	r2, [r3, #60]
+ 114:KeccakFW.c    **** }
+ 701              		.loc 1 114 5 is_stmt 1 view .LVU262
+ 114:KeccakFW.c    **** }
+ 702              		.loc 1 114 24 is_stmt 0 view .LVU263
+ 703 01e8 0022     		movs	r2, #0
+ 704 01ea C3F88C20 		str	r2, [r3, #140]
+ 705              	.L21:
+ 706              	.LBE12:
+ 707              	.LBE11:
+ 121:KeccakFW.c    **** }
+ 708              		.loc 1 121 5 is_stmt 1 view .LVU264
+ 121:KeccakFW.c    **** }
+ 709              		.loc 1 121 31 is_stmt 0 view .LVU265
+ 710 01ee 064B     		ldr	r3, .L26
+ 711 01f0 D3F88C20 		ldr	r2, [r3, #140]
+ 121:KeccakFW.c    **** }
+ 712              		.loc 1 121 45 view .LVU266
+ 713 01f4 511C     		adds	r1, r2, #1
+ 714 01f6 C3F88C10 		str	r1, [r3, #140]
+ 121:KeccakFW.c    **** }
+ 715              		.loc 1 121 26 view .LVU267
+ 716 01fa 1344     		add	r3, r3, r2
+ 122:KeccakFW.c    **** 
+ 717              		.loc 1 122 1 view .LVU268
+ 718 01fc 93F84C00 		ldrb	r0, [r3, #76]	@ zero_extendqisi2
+ 719 0200 19B0     		add	sp, sp, #100
+ 720              	.LCFI6:
+ 721              		.cfi_def_cfa_offset 36
+ 722              		@ sp needed
+ 723 0202 BDE8F08F 		pop	{r4, r5, r6, r7, r8, r9, r10, fp, pc}
+ 724              	.L27:
+ 725 0206 00BF     		.align	2
+ 726              	.L26:
+ 727 0208 00000000 		.word	.LANCHOR0
+ 728 020c 0C000000 		.word	.LANCHOR0+12
+ 729              		.cfi_endproc
+ 730              	.LFE6:
+ 732              		.section	.text.rand_share_64,"ax",%progbits
+ 733              		.align	1
+ 734              		.global	rand_share_64
+ 735              		.syntax unified
+ 736              		.thumb
+ 737              		.thumb_func
+ 739              	rand_share_64:
+ 740              	.LFB7:
+ 124:KeccakFW.c    ****     uint64_t r = 0;
+ 741              		.loc 1 124 26 is_stmt 1 view -0
+ 742              		.cfi_startproc
+ 743              		@ args = 0, pretend = 0, frame = 0
+ 744              		@ frame_needed = 0, uses_anonymous_args = 0
+ 125:KeccakFW.c    ****     for (int i = 0; i < 8; i++) {
+ 745              		.loc 1 125 5 view .LVU270
+ 746              	.LVL29:
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 747              		.loc 1 126 5 view .LVU271
+ 748              	.LBB18:
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 749              		.loc 1 126 10 view .LVU272
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 750              		.loc 1 126 23 discriminator 1 view .LVU273
+ 751              	.LBE18:
+ 124:KeccakFW.c    ****     uint64_t r = 0;
+ 752              		.loc 1 124 26 is_stmt 0 view .LVU274
+ 753 0000 70B5     		push	{r4, r5, r6, lr}
+ 754              	.LCFI7:
+ 755              		.cfi_def_cfa_offset 16
+ 756              		.cfi_offset 4, -16
+ 757              		.cfi_offset 5, -12
+ 758              		.cfi_offset 6, -8
+ 759              		.cfi_offset 14, -4
+ 124:KeccakFW.c    ****     uint64_t r = 0;
+ 760              		.loc 1 124 26 view .LVU275
+ 761 0002 0024     		movs	r4, #0
+ 125:KeccakFW.c    ****     for (int i = 0; i < 8; i++) {
+ 762              		.loc 1 125 14 view .LVU276
+ 763 0004 2646     		mov	r6, r4
+ 764 0006 2546     		mov	r5, r4
+ 765              	.LVL30:
+ 766              	.L29:
+ 767              	.LBB19:
+ 127:KeccakFW.c    ****     }
+ 768              		.loc 1 127 9 is_stmt 1 view .LVU277
+ 127:KeccakFW.c    ****     }
+ 769              		.loc 1 127 25 is_stmt 0 view .LVU278
+ 770 0008 FFF7FEFF 		bl	prng_get_byte
+ 771              	.LVL31:
+ 127:KeccakFW.c    ****     }
+ 772              		.loc 1 127 42 discriminator 1 view .LVU279
+ 773 000c A4F12003 		sub	r3, r4, #32
+ 774 0010 C4F12002 		rsb	r2, r4, #32
+ 775 0014 00FA03F3 		lsl	r3, r0, r3
+ 776 0018 20FA02F2 		lsr	r2, r0, r2
+ 777 001c A040     		lsls	r0, r0, r4
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 778              		.loc 1 126 23 discriminator 1 view .LVU280
+ 779 001e 0834     		adds	r4, r4, #8
+ 127:KeccakFW.c    ****     }
+ 780              		.loc 1 127 42 discriminator 1 view .LVU281
+ 781 0020 1343     		orrs	r3, r3, r2
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 782              		.loc 1 126 23 discriminator 1 view .LVU282
+ 783 0022 402C     		cmp	r4, #64
+ 127:KeccakFW.c    ****     }
+ 784              		.loc 1 127 11 discriminator 1 view .LVU283
+ 785 0024 46EA0006 		orr	r6, r6, r0
+ 786              	.LVL32:
+ 127:KeccakFW.c    ****     }
+ 787              		.loc 1 127 11 discriminator 1 view .LVU284
+ 788 0028 45EA0305 		orr	r5, r5, r3
+ 789              	.LVL33:
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 790              		.loc 1 126 29 is_stmt 1 discriminator 3 view .LVU285
+ 126:KeccakFW.c    ****         r |= ((uint64_t)prng_get_byte()) << (8 * i);
+ 791              		.loc 1 126 23 discriminator 1 view .LVU286
+ 792 002c ECD1     		bne	.L29
+ 793              	.LBE19:
+ 129:KeccakFW.c    **** }
+ 794              		.loc 1 129 5 view .LVU287
+ 130:KeccakFW.c    **** 
+ 795              		.loc 1 130 1 is_stmt 0 view .LVU288
+ 796 002e 3046     		mov	r0, r6
+ 797 0030 2946     		mov	r1, r5
+ 798 0032 70BD     		pop	{r4, r5, r6, pc}
+ 130:KeccakFW.c    **** 
+ 799              		.loc 1 130 1 view .LVU289
+ 800              		.cfi_endproc
+ 801              	.LFE7:
+ 803              		.section	.text.bit_interleave,"ax",%progbits
+ 804              		.align	1
+ 805              		.global	bit_interleave
+ 806              		.syntax unified
+ 807              		.thumb
+ 808              		.thumb_func
+ 810              	bit_interleave:
+ 811              	.LVL34:
+ 812              	.LFB8:
+ 136:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 813              		.loc 1 136 61 is_stmt 1 view -0
+ 814              		.cfi_startproc
+ 815              		@ args = 0, pretend = 0, frame = 8
+ 816              		@ frame_needed = 0, uses_anonymous_args = 0
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 817              		.loc 1 137 5 view .LVU291
+ 818              	.LBB20:
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 819              		.loc 1 137 10 view .LVU292
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 820              		.loc 1 137 27 discriminator 1 view .LVU293
+ 821              	.LBE20:
+ 136:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 822              		.loc 1 136 61 is_stmt 0 view .LVU294
+ 823 0000 2DE9F341 		push	{r0, r1, r4, r5, r6, r7, r8, lr}
+ 824              	.LCFI8:
+ 825              		.cfi_def_cfa_offset 32
+ 826              		.cfi_offset 4, -24
+ 827              		.cfi_offset 5, -20
+ 828              		.cfi_offset 6, -16
+ 829              		.cfi_offset 7, -12
+ 830              		.cfi_offset 8, -8
+ 831              		.cfi_offset 14, -4
+ 832              	.LBB32:
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 833              		.loc 1 137 14 view .LVU295
+ 834 0004 0025     		movs	r5, #0
+ 835              	.LBE32:
+ 136:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 836              		.loc 1 136 61 view .LVU296
+ 837 0006 8446     		mov	ip, r0
+ 838 0008 0F46     		mov	r7, r1
+ 839              	.LBB33:
+ 840              	.LBB21:
+ 841              	.LBB22:
+ 140:KeccakFW.c    ****         }
+ 842              		.loc 1 140 22 view .LVU297
+ 843 000a AE46     		mov	lr, r5
+ 844              	.LVL35:
+ 845              	.L32:
+ 139:KeccakFW.c    ****             word |= ((uint64_t)s0[blk + j]) << (8 * j);
+ 846              		.loc 1 139 27 is_stmt 1 discriminator 1 view .LVU298
+ 847              	.LBE22:
+ 848              	.LBE21:
+ 849              	.LBE33:
+ 136:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 850              		.loc 1 136 61 is_stmt 0 view .LVU299
+ 851 000c 0023     		movs	r3, #0
+ 852 000e 0CEB0506 		add	r6, ip, r5
+ 853              	.LBB34:
+ 854              	.LBB30:
+ 138:KeccakFW.c    ****         for (int j = 0; j < 8; j++) {
+ 855              		.loc 1 138 18 view .LVU300
+ 856 0012 1846     		mov	r0, r3
+ 857 0014 1A46     		mov	r2, r3
+ 858              	.LVL36:
+ 859              	.L33:
+ 860              	.LBB23:
+ 140:KeccakFW.c    ****         }
+ 861              		.loc 1 140 13 is_stmt 1 view .LVU301
+ 140:KeccakFW.c    ****         }
+ 862              		.loc 1 140 34 is_stmt 0 view .LVU302
+ 863 0016 16F8011B 		ldrb	r1, [r6], #1	@ zero_extendqisi2
+ 140:KeccakFW.c    ****         }
+ 864              		.loc 1 140 45 view .LVU303
+ 865 001a A3F12004 		sub	r4, r3, #32
+ 866 001e C3F12008 		rsb	r8, r3, #32
+ 867 0022 01FA04F4 		lsl	r4, r1, r4
+ 868 0026 21FA08F8 		lsr	r8, r1, r8
+ 869 002a 44EA0804 		orr	r4, r4, r8
+ 870 002e 9940     		lsls	r1, r1, r3
+ 139:KeccakFW.c    ****             word |= ((uint64_t)s0[blk + j]) << (8 * j);
+ 871              		.loc 1 139 27 discriminator 1 view .LVU304
+ 872 0030 0833     		adds	r3, r3, #8
+ 140:KeccakFW.c    ****         }
+ 873              		.loc 1 140 18 view .LVU305
+ 874 0032 0143     		orrs	r1, r1, r0
+ 875 0034 1443     		orrs	r4, r4, r2
+ 139:KeccakFW.c    ****             word |= ((uint64_t)s0[blk + j]) << (8 * j);
+ 876              		.loc 1 139 27 discriminator 1 view .LVU306
+ 877 0036 402B     		cmp	r3, #64
+ 140:KeccakFW.c    ****         }
+ 878              		.loc 1 140 18 view .LVU307
+ 879 0038 0846     		mov	r0, r1
+ 880              	.LVL37:
+ 140:KeccakFW.c    ****         }
+ 881              		.loc 1 140 18 view .LVU308
+ 882 003a 2246     		mov	r2, r4
+ 883              	.LVL38:
+ 139:KeccakFW.c    ****             word |= ((uint64_t)s0[blk + j]) << (8 * j);
+ 884              		.loc 1 139 33 is_stmt 1 discriminator 3 view .LVU309
+ 139:KeccakFW.c    ****             word |= ((uint64_t)s0[blk + j]) << (8 * j);
+ 885              		.loc 1 139 27 discriminator 1 view .LVU310
+ 886 003c EBD1     		bne	.L33
+ 887              	.LBE23:
+ 143:KeccakFW.c    **** 
+ 888              		.loc 1 143 9 view .LVU311
+ 143:KeccakFW.c    **** 
+ 889              		.loc 1 143 17 is_stmt 0 view .LVU312
+ 890 003e CDE900EE 		strd	lr, lr, [sp]
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 891              		.loc 1 145 9 is_stmt 1 view .LVU313
+ 892              	.LBB24:
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 893              		.loc 1 145 14 view .LVU314
+ 894              	.LVL39:
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 895              		.loc 1 145 31 discriminator 1 view .LVU315
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 896              		.loc 1 145 18 is_stmt 0 view .LVU316
+ 897 0042 0022     		movs	r2, #0
+ 898              	.LVL40:
+ 899              	.L35:
+ 900              	.LBB25:
+ 146:KeccakFW.c    ****             uint8_t bitval = (word >> bit) & 1;
+ 901              		.loc 1 146 13 is_stmt 1 view .LVU317
+ 147:KeccakFW.c    **** 
+ 902              		.loc 1 147 13 view .LVU318
+ 147:KeccakFW.c    **** 
+ 903              		.loc 1 147 36 is_stmt 0 view .LVU319
+ 904 0044 C2F12006 		rsb	r6, r2, #32
+ 905 0048 A2F12000 		sub	r0, r2, #32
+ 906 004c 21FA02F3 		lsr	r3, r1, r2
+ 907 0050 04FA06F6 		lsl	r6, r4, r6
+ 908 0054 24FA00F0 		lsr	r0, r4, r0
+ 909 0058 3343     		orrs	r3, r3, r6
+ 910 005a 0343     		orrs	r3, r3, r0
+ 151:KeccakFW.c    ****                 else
+ 911              		.loc 1 151 30 view .LVU320
+ 912 005c 1611     		asrs	r6, r2, #4
+ 150:KeccakFW.c    ****                     byte_out = (bit / 16);      
+ 913              		.loc 1 150 20 view .LVU321
+ 914 005e D007     		lsls	r0, r2, #31
+ 153:KeccakFW.c    ****                 bit_out = (bit % 16) / 2;
+ 915              		.loc 1 153 30 view .LVU322
+ 916 0060 48BF     		it	mi
+ 917 0062 0436     		addmi	r6, r6, #4
+ 159:KeccakFW.c    ****         }
+ 918              		.loc 1 159 25 view .LVU323
+ 919 0064 06F10800 		add	r0, r6, #8
+ 920 0068 0DEB0006 		add	r6, sp, r0
+ 147:KeccakFW.c    **** 
+ 921              		.loc 1 147 21 view .LVU324
+ 922 006c 03F00103 		and	r3, r3, #1
+ 923              	.LVL41:
+ 149:KeccakFW.c    ****                 if ((bit % 2) == 0)
+ 924              		.loc 1 149 13 is_stmt 1 view .LVU325
+ 150:KeccakFW.c    ****                     byte_out = (bit / 16);      
+ 925              		.loc 1 150 17 view .LVU326
+ 153:KeccakFW.c    ****                 bit_out = (bit % 16) / 2;
+ 926              		.loc 1 153 21 view .LVU327
+ 154:KeccakFW.c    ****             } else {
+ 927              		.loc 1 154 17 view .LVU328
+ 159:KeccakFW.c    ****         }
+ 928              		.loc 1 159 13 view .LVU329
+ 154:KeccakFW.c    ****             } else {
+ 929              		.loc 1 154 25 is_stmt 0 view .LVU330
+ 930 0070 C2F34200 		ubfx	r0, r2, #1, #3
+ 159:KeccakFW.c    ****         }
+ 931              		.loc 1 159 35 view .LVU331
+ 932 0074 8340     		lsls	r3, r3, r0
+ 159:KeccakFW.c    ****         }
+ 933              		.loc 1 159 25 view .LVU332
+ 934 0076 16F8080C 		ldrb	r0, [r6, #-8]	@ zero_extendqisi2
+ 935              	.LBE25:
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 936              		.loc 1 145 40 discriminator 2 view .LVU333
+ 937 007a 0132     		adds	r2, r2, #1
+ 938              	.LVL42:
+ 939              	.LBB26:
+ 159:KeccakFW.c    ****         }
+ 940              		.loc 1 159 25 view .LVU334
+ 941 007c 0343     		orrs	r3, r3, r0
+ 942              	.LBE26:
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 943              		.loc 1 145 31 discriminator 1 view .LVU335
+ 944 007e 402A     		cmp	r2, #64
+ 945              	.LBB27:
+ 159:KeccakFW.c    ****         }
+ 946              		.loc 1 159 25 view .LVU336
+ 947 0080 06F8083C 		strb	r3, [r6, #-8]
+ 948              	.LBE27:
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 949              		.loc 1 145 40 is_stmt 1 discriminator 2 view .LVU337
+ 950              	.LVL43:
+ 145:KeccakFW.c    ****             int byte_out, bit_out;
+ 951              		.loc 1 145 31 discriminator 1 view .LVU338
+ 952 0084 DED1     		bne	.L35
+ 953              	.LBE24:
+ 954              	.LBB28:
+ 163:KeccakFW.c    ****         }
+ 955              		.loc 1 163 25 is_stmt 0 view .LVU339
+ 956 0086 6B46     		mov	r3, sp
+ 957 0088 03CB     		ldmia	r3!, {r0, r1}
+ 958              	.LVL44:
+ 163:KeccakFW.c    ****         }
+ 959              		.loc 1 163 25 view .LVU340
+ 960 008a 7A19     		adds	r2, r7, r5
+ 961              	.LVL45:
+ 163:KeccakFW.c    ****         }
+ 962              		.loc 1 163 25 view .LVU341
+ 963 008c 7851     		str	r0, [r7, r5]	@ unaligned
+ 163:KeccakFW.c    ****         }
+ 964              		.loc 1 163 25 view .LVU342
+ 965              	.LBE28:
+ 966              	.LBE30:
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 967              		.loc 1 137 38 discriminator 2 view .LVU343
+ 968 008e 0835     		adds	r5, r5, #8
+ 969              	.LVL46:
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 970              		.loc 1 137 27 discriminator 1 view .LVU344
+ 971 0090 C82D     		cmp	r5, #200
+ 972              	.LBB31:
+ 973              	.LBB29:
+ 163:KeccakFW.c    ****         }
+ 974              		.loc 1 163 25 view .LVU345
+ 975 0092 5160     		str	r1, [r2, #4]	@ unaligned
+ 976              	.LBE29:
+ 977              	.LBE31:
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 978              		.loc 1 137 38 is_stmt 1 discriminator 2 view .LVU346
+ 979              	.LVL47:
+ 137:KeccakFW.c    ****         uint64_t word = 0;
+ 980              		.loc 1 137 27 discriminator 1 view .LVU347
+ 981 0094 BAD1     		bne	.L32
+ 982              	.LBE34:
+ 166:KeccakFW.c    **** 
+ 983              		.loc 1 166 1 is_stmt 0 view .LVU348
+ 984 0096 02B0     		add	sp, sp, #8
+ 985              	.LCFI9:
+ 986              		.cfi_def_cfa_offset 24
+ 987              		@ sp needed
+ 988 0098 BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 166:KeccakFW.c    **** 
+ 989              		.loc 1 166 1 view .LVU349
+ 990              		.cfi_endproc
+ 991              	.LFE8:
+ 993              		.section	.text.bit_deinterleave,"ax",%progbits
+ 994              		.align	1
+ 995              		.global	bit_deinterleave
+ 996              		.syntax unified
+ 997              		.thumb
+ 998              		.thumb_func
+ 1000              	bit_deinterleave:
+ 1001              	.LVL48:
+ 1002              	.LFB9:
+ 169:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 1003              		.loc 1 169 63 is_stmt 1 view -0
+ 1004              		.cfi_startproc
+ 1005              		@ args = 0, pretend = 0, frame = 8
+ 1006              		@ frame_needed = 0, uses_anonymous_args = 0
+ 170:KeccakFW.c    ****         uint64_t word = 0;
+ 1007              		.loc 1 170 5 view .LVU351
+ 1008              	.LBB35:
+ 170:KeccakFW.c    ****         uint64_t word = 0;
+ 1009              		.loc 1 170 10 view .LVU352
+ 170:KeccakFW.c    ****         uint64_t word = 0;
+ 1010              		.loc 1 170 27 discriminator 1 view .LVU353
+ 1011              	.LBE35:
+ 169:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 1012              		.loc 1 169 63 is_stmt 0 view .LVU354
+ 1013 0000 2DE9F74F 		push	{r0, r1, r2, r4, r5, r6, r7, r8, r9, r10, fp, lr}
+ 1014              	.LCFI10:
+ 1015              		.cfi_def_cfa_offset 48
+ 1016              		.cfi_offset 4, -36
+ 1017              		.cfi_offset 5, -32
+ 1018              		.cfi_offset 6, -28
+ 1019              		.cfi_offset 7, -24
+ 1020              		.cfi_offset 8, -20
+ 1021              		.cfi_offset 9, -16
+ 1022              		.cfi_offset 10, -12
+ 1023              		.cfi_offset 11, -8
+ 1024              		.cfi_offset 14, -4
+ 169:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 1025              		.loc 1 169 63 view .LVU355
+ 1026 0004 CDE90001 		strd	r0, r1, [sp]
+ 1027              	.LBB49:
+ 170:KeccakFW.c    ****         uint64_t word = 0;
+ 1028              		.loc 1 170 14 view .LVU356
+ 1029 0008 0025     		movs	r5, #0
+ 1030              	.LVL49:
+ 1031              	.L43:
+ 1032              	.LBB36:
+ 1033              	.LBB37:
+ 173:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 1034              		.loc 1 173 35 is_stmt 1 discriminator 1 view .LVU357
+ 1035 000a 009B     		ldr	r3, [sp]
+ 1036              	.LBE37:
+ 1037              	.LBE36:
+ 1038              	.LBE49:
+ 169:KeccakFW.c    ****     for (int blk = 0; blk < 200; blk += 8) {
+ 1039              		.loc 1 169 63 is_stmt 0 view .LVU358
+ 1040 000c 0024     		movs	r4, #0
+ 1041 000e 03EB050C 		add	ip, r3, r5
+ 1042              	.LBB50:
+ 1043              	.LBB48:
+ 171:KeccakFW.c    **** 
+ 1044              		.loc 1 171 18 view .LVU359
+ 1045 0012 A146     		mov	r9, r4
+ 1046 0014 A046     		mov	r8, r4
+ 1047              	.LVL50:
+ 1048              	.L45:
+ 1049              	.LBB44:
+ 1050              	.LBB38:
+ 174:KeccakFW.c    ****             uint8_t odd  = I0[blk + 4 + group];  
+ 1051              		.loc 1 174 13 is_stmt 1 view .LVU360
+ 174:KeccakFW.c    ****             uint8_t odd  = I0[blk + 4 + group];  
+ 1052              		.loc 1 174 21 is_stmt 0 view .LVU361
+ 1053 0016 1CF801AB 		ldrb	r10, [ip], #1	@ zero_extendqisi2
+ 1054              	.LVL51:
+ 175:KeccakFW.c    **** 
+ 1055              		.loc 1 175 13 is_stmt 1 view .LVU362
+ 175:KeccakFW.c    **** 
+ 1056              		.loc 1 175 21 is_stmt 0 view .LVU363
+ 1057 001a 9CF803B0 		ldrb	fp, [ip, #3]	@ zero_extendqisi2
+ 1058              	.LVL52:
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1059              		.loc 1 177 13 is_stmt 1 view .LVU364
+ 1060              	.LBB39:
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1061              		.loc 1 177 18 view .LVU365
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1062              		.loc 1 177 31 discriminator 1 view .LVU366
+ 1063              	.LBE39:
+ 175:KeccakFW.c    **** 
+ 1064              		.loc 1 175 21 is_stmt 0 view .LVU367
+ 1065 001e 2146     		mov	r1, r4
+ 1066              	.LBB43:
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1067              		.loc 1 177 22 view .LVU368
+ 1068 0020 0026     		movs	r6, #0
+ 1069              	.LVL53:
+ 1070              	.L44:
+ 1071              	.LBB40:
+ 178:KeccakFW.c    ****                 uint8_t bit_odd  = (odd  >> k) & 1;
+ 1072              		.loc 1 178 17 is_stmt 1 view .LVU369
+ 179:KeccakFW.c    **** 
+ 1073              		.loc 1 179 17 view .LVU370
+ 181:KeccakFW.c    **** 
+ 1074              		.loc 1 181 17 view .LVU371
+ 183:KeccakFW.c    ****                 word |= ((uint64_t)bit_odd)  << (base + 2 * k + 1);
+ 1075              		.loc 1 183 17 view .LVU372
+ 184:KeccakFW.c    ****             }
+ 1076              		.loc 1 184 17 view .LVU373
+ 179:KeccakFW.c    **** 
+ 1077              		.loc 1 179 42 is_stmt 0 view .LVU374
+ 1078 0022 4BFA06F0 		asr	r0, fp, r6
+ 184:KeccakFW.c    ****             }
+ 1079              		.loc 1 184 26 view .LVU375
+ 1080 0026 00F00100 		and	r0, r0, #1
+ 184:KeccakFW.c    ****             }
+ 1081              		.loc 1 184 46 view .LVU376
+ 1082 002a A1F11F02 		sub	r2, r1, #31
+ 1083 002e C1F11F03 		rsb	r3, r1, #31
+ 1084 0032 20FA03F3 		lsr	r3, r0, r3
+ 1085 0036 00FA02F2 		lsl	r2, r0, r2
+ 184:KeccakFW.c    ****             }
+ 1086              		.loc 1 184 63 view .LVU377
+ 1087 003a 4F1C     		adds	r7, r1, #1
+ 184:KeccakFW.c    ****             }
+ 1088              		.loc 1 184 46 view .LVU378
+ 1089 003c 1A43     		orrs	r2, r2, r3
+ 178:KeccakFW.c    ****                 uint8_t bit_odd  = (odd  >> k) & 1;
+ 1090              		.loc 1 178 42 view .LVU379
+ 1091 003e 4AFA06F3 		asr	r3, r10, r6
+ 183:KeccakFW.c    ****                 word |= ((uint64_t)bit_odd)  << (base + 2 * k + 1);
+ 1092              		.loc 1 183 26 view .LVU380
+ 1093 0042 03F00103 		and	r3, r3, #1
+ 184:KeccakFW.c    ****             }
+ 1094              		.loc 1 184 46 view .LVU381
+ 1095 0046 B840     		lsls	r0, r0, r7
+ 183:KeccakFW.c    ****                 word |= ((uint64_t)bit_odd)  << (base + 2 * k + 1);
+ 1096              		.loc 1 183 46 view .LVU382
+ 1097 0048 A1F1200E 		sub	lr, r1, #32
+ 1098 004c C1F12007 		rsb	r7, r1, #32
+ 1099 0050 03FA0EFE 		lsl	lr, r3, lr
+ 1100 0054 23FA07F7 		lsr	r7, r3, r7
+ 1101 0058 4EEA0707 		orr	r7, lr, r7
+ 1102 005c 8B40     		lsls	r3, r3, r1
+ 184:KeccakFW.c    ****             }
+ 1103              		.loc 1 184 22 view .LVU383
+ 1104 005e 0343     		orrs	r3, r3, r0
+ 1105 0060 3A43     		orrs	r2, r2, r7
+ 1106              	.LBE40:
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1107              		.loc 1 177 37 discriminator 3 view .LVU384
+ 1108 0062 0136     		adds	r6, r6, #1
+ 1109              	.LVL54:
+ 1110              	.LBB41:
+ 184:KeccakFW.c    ****             }
+ 1111              		.loc 1 184 22 view .LVU385
+ 1112 0064 43EA0903 		orr	r3, r3, r9
+ 1113 0068 42EA0802 		orr	r2, r2, r8
+ 1114              	.LBE41:
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1115              		.loc 1 177 31 discriminator 1 view .LVU386
+ 1116 006c 082E     		cmp	r6, #8
+ 1117              	.LBB42:
+ 184:KeccakFW.c    ****             }
+ 1118              		.loc 1 184 22 view .LVU387
+ 1119 006e 9946     		mov	r9, r3
+ 1120              	.LVL55:
+ 184:KeccakFW.c    ****             }
+ 1121              		.loc 1 184 22 view .LVU388
+ 1122 0070 9046     		mov	r8, r2
+ 1123              	.LVL56:
+ 184:KeccakFW.c    ****             }
+ 1124              		.loc 1 184 22 view .LVU389
+ 1125              	.LBE42:
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1126              		.loc 1 177 37 is_stmt 1 discriminator 3 view .LVU390
+ 177:KeccakFW.c    ****                 uint8_t bit_even = (even >> k) & 1;
+ 1127              		.loc 1 177 31 discriminator 1 view .LVU391
+ 1128 0072 01F10201 		add	r1, r1, #2
+ 1129 0076 D4D1     		bne	.L44
+ 1130              	.LBE43:
+ 1131              	.LBE38:
+ 173:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 1132              		.loc 1 173 45 discriminator 2 view .LVU392
+ 1133              	.LVL57:
+ 173:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 1134              		.loc 1 173 35 discriminator 1 view .LVU393
+ 1135 0078 1034     		adds	r4, r4, #16
+ 1136 007a 402C     		cmp	r4, #64
+ 1137 007c CBD1     		bne	.L45
+ 1138              	.LVL58:
+ 173:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 1139              		.loc 1 173 35 is_stmt 0 discriminator 1 view .LVU394
+ 1140              	.LBE44:
+ 1141              	.LBB45:
+ 188:KeccakFW.c    ****             s0[blk + j] = (word >> (8 * j)) & 0xFF;
+ 1142              		.loc 1 188 27 is_stmt 1 discriminator 1 view .LVU395
+ 1143 007e 0199     		ldr	r1, [sp, #4]
+ 1144 0080 4F19     		adds	r7, r1, r5
+ 1145              	.LBE45:
+ 1146              	.LBB46:
+ 173:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 1147              		.loc 1 173 35 is_stmt 0 discriminator 1 view .LVU396
+ 1148 0082 0021     		movs	r1, #0
+ 1149              	.LVL59:
+ 1150              	.L46:
+ 173:KeccakFW.c    ****             uint8_t even = I0[blk + group];     
+ 1151              		.loc 1 173 35 discriminator 1 view .LVU397
+ 1152              	.LBE46:
+ 1153              	.LBB47:
+ 189:KeccakFW.c    ****         }
+ 1154              		.loc 1 189 13 is_stmt 1 view .LVU398
+ 189:KeccakFW.c    ****         }
+ 1155              		.loc 1 189 33 is_stmt 0 view .LVU399
+ 1156 0084 C1F12006 		rsb	r6, r1, #32
+ 1157 0088 A1F12004 		sub	r4, r1, #32
+ 1158 008c 23FA01F0 		lsr	r0, r3, r1
+ 1159 0090 02FA06F6 		lsl	r6, r2, r6
+ 1160 0094 3043     		orrs	r0, r0, r6
+ 1161 0096 22FA04F4 		lsr	r4, r2, r4
+ 188:KeccakFW.c    ****             s0[blk + j] = (word >> (8 * j)) & 0xFF;
+ 1162              		.loc 1 188 27 discriminator 1 view .LVU400
+ 1163 009a 0831     		adds	r1, r1, #8
+ 189:KeccakFW.c    ****         }
+ 1164              		.loc 1 189 33 view .LVU401
+ 1165 009c 2043     		orrs	r0, r0, r4
+ 188:KeccakFW.c    ****             s0[blk + j] = (word >> (8 * j)) & 0xFF;
+ 1166              		.loc 1 188 27 discriminator 1 view .LVU402
+ 1167 009e 4029     		cmp	r1, #64
+ 189:KeccakFW.c    ****         }
+ 1168              		.loc 1 189 25 view .LVU403
+ 1169 00a0 07F8010B 		strb	r0, [r7], #1
+ 188:KeccakFW.c    ****             s0[blk + j] = (word >> (8 * j)) & 0xFF;
+ 1170              		.loc 1 188 33 is_stmt 1 discriminator 3 view .LVU404
+ 188:KeccakFW.c    ****             s0[blk + j] = (word >> (8 * j)) & 0xFF;
+ 1171              		.loc 1 188 27 discriminator 1 view .LVU405
+ 1172 00a4 EED1     		bne	.L46
+ 1173              	.LBE47:
+ 1174              	.LBE48:
+ 170:KeccakFW.c    ****         uint64_t word = 0;
+ 1175              		.loc 1 170 38 discriminator 2 view .LVU406
+ 1176 00a6 0835     		adds	r5, r5, #8
+ 1177              	.LVL60:
+ 170:KeccakFW.c    ****         uint64_t word = 0;
+ 1178              		.loc 1 170 27 discriminator 1 view .LVU407
+ 1179 00a8 C82D     		cmp	r5, #200
+ 1180 00aa AED1     		bne	.L43
+ 1181              	.LBE50:
+ 192:KeccakFW.c    **** 
+ 1182              		.loc 1 192 1 is_stmt 0 view .LVU408
+ 1183 00ac 03B0     		add	sp, sp, #12
+ 1184              	.LCFI11:
+ 1185              		.cfi_def_cfa_offset 36
+ 1186              	.LVL61:
+ 192:KeccakFW.c    **** 
+ 1187              		.loc 1 192 1 view .LVU409
+ 1188              		@ sp needed
+ 1189 00ae BDE8F08F 		pop	{r4, r5, r6, r7, r8, r9, r10, fp, pc}
+ 192:KeccakFW.c    **** 
+ 1190              		.loc 1 192 1 view .LVU410
+ 1191              		.cfi_endproc
+ 1192              	.LFE9:
+ 1194              		.section	.text.create_state,"ax",%progbits
+ 1195              		.align	1
+ 1196              		.global	create_state
+ 1197              		.syntax unified
+ 1198              		.thumb
+ 1199              		.thumb_func
+ 1201              	create_state:
+ 1202              	.LVL62:
+ 1203              	.LFB15:
+ 298:KeccakFW.c    **** 
+ 299:KeccakFW.c    **** 
+ 300:KeccakFW.c    **** // ***************************************************************************
+ 301:KeccakFW.c    **** // *************** STATE CREATION + MASKING + UNMASKING FUNCTIONS **************
+ 302:KeccakFW.c    **** // ***************************************************************************
+ 303:KeccakFW.c    **** 
+ 304:KeccakFW.c    **** void create_state(uint8_t* plaintext, int len)
+ 305:KeccakFW.c    **** {
+ 1204              		.loc 1 305 1 is_stmt 1 view -0
+ 1205              		.cfi_startproc
+ 1206              		@ args = 0, pretend = 0, frame = 0
+ 1207              		@ frame_needed = 0, uses_anonymous_args = 0
+ 306:KeccakFW.c    ****     int j=0;
+ 1208              		.loc 1 306 5 view .LVU412
+ 307:KeccakFW.c    ****     int i;
+ 1209              		.loc 1 307 5 view .LVU413
+ 308:KeccakFW.c    ****     int mdlen = 512; 
+ 1210              		.loc 1 308 5 view .LVU414
+ 309:KeccakFW.c    ****     int rsiz = 1600-2*mdlen; 
+ 1211              		.loc 1 309 5 view .LVU415
+ 310:KeccakFW.c    ****     int rsiz_bytes = rsiz/8; 
+ 1212              		.loc 1 310 5 view .LVU416
+ 311:KeccakFW.c    ****  
+ 312:KeccakFW.c    ****     for(i=0; i<200; i++)
+ 1213              		.loc 1 312 5 view .LVU417
+ 1214              		.loc 1 312 15 discriminator 1 view .LVU418
+ 1215              		.loc 1 312 10 is_stmt 0 view .LVU419
+ 1216 0000 0022     		movs	r2, #0
+ 313:KeccakFW.c    ****     {
+ 314:KeccakFW.c    ****         s0[i] = 0;
+ 1217              		.loc 1 314 15 view .LVU420
+ 1218 0002 114B     		ldr	r3, .L56
+ 305:KeccakFW.c    ****     int j=0;
+ 1219              		.loc 1 305 1 view .LVU421
+ 1220 0004 70B5     		push	{r4, r5, r6, lr}
+ 1221              	.LCFI12:
+ 1222              		.cfi_def_cfa_offset 16
+ 1223              		.cfi_offset 4, -16
+ 1224              		.cfi_offset 5, -12
+ 1225              		.cfi_offset 6, -8
+ 1226              		.cfi_offset 14, -4
+ 1227              		.loc 1 314 15 view .LVU422
+ 1228 0006 1546     		mov	r5, r2
+ 1229              	.LVL63:
+ 1230              	.L52:
+ 1231              		.loc 1 314 9 is_stmt 1 view .LVU423
+ 1232              		.loc 1 314 15 is_stmt 0 view .LVU424
+ 1233 0008 9C18     		adds	r4, r3, r2
+ 312:KeccakFW.c    ****     {
+ 1234              		.loc 1 312 22 discriminator 3 view .LVU425
+ 1235 000a 0132     		adds	r2, r2, #1
+ 1236              	.LVL64:
+ 312:KeccakFW.c    ****     {
+ 1237              		.loc 1 312 15 discriminator 1 view .LVU426
+ 1238 000c C82A     		cmp	r2, #200
+ 1239              		.loc 1 314 15 view .LVU427
+ 1240 000e 84F8B450 		strb	r5, [r4, #180]
+ 312:KeccakFW.c    ****     {
+ 1241              		.loc 1 312 22 is_stmt 1 discriminator 3 view .LVU428
+ 1242              	.LVL65:
+ 312:KeccakFW.c    ****     {
+ 1243              		.loc 1 312 15 discriminator 1 view .LVU429
+ 1244 0012 F9D1     		bne	.L52
+ 315:KeccakFW.c    ****     }
+ 316:KeccakFW.c    **** 
+ 317:KeccakFW.c    **** 
+ 318:KeccakFW.c    ****     for(i=0; i<len; i++)
+ 1245              		.loc 1 318 10 is_stmt 0 view .LVU430
+ 1246 0014 0022     		movs	r2, #0
+ 1247              	.LVL66:
+ 1248              	.L53:
+ 1249              		.loc 1 318 15 is_stmt 1 discriminator 1 view .LVU431
+ 1250 0016 8A42     		cmp	r2, r1
+ 1251 0018 0DDB     		blt	.L54
+ 319:KeccakFW.c    ****     {
+ 320:KeccakFW.c    ****         s0[i] ^= plaintext[i];
+ 321:KeccakFW.c    ****     }
+ 322:KeccakFW.c    ****     s0[len] ^= 0x06;
+ 1252              		.loc 1 322 5 view .LVU432
+ 1253              		.loc 1 322 7 is_stmt 0 view .LVU433
+ 1254 001a 1944     		add	r1, r1, r3
+ 1255              	.LVL67:
+ 1256              		.loc 1 322 7 view .LVU434
+ 1257 001c 91F8B420 		ldrb	r2, [r1, #180]	@ zero_extendqisi2
+ 1258              	.LVL68:
+ 1259              		.loc 1 322 13 view .LVU435
+ 1260 0020 82F00602 		eor	r2, r2, #6
+ 1261 0024 81F8B420 		strb	r2, [r1, #180]
+ 323:KeccakFW.c    ****     s0[(rsiz_bytes-1)] ^= 0x80;
+ 1262              		.loc 1 323 5 is_stmt 1 view .LVU436
+ 1263              		.loc 1 323 7 is_stmt 0 view .LVU437
+ 1264 0028 93F8FB20 		ldrb	r2, [r3, #251]	@ zero_extendqisi2
+ 1265              		.loc 1 323 24 view .LVU438
+ 1266 002c 82F08002 		eor	r2, r2, #128
+ 1267 0030 83F8FB20 		strb	r2, [r3, #251]
+ 324:KeccakFW.c    **** }
+ 1268              		.loc 1 324 1 view .LVU439
+ 1269 0034 70BD     		pop	{r4, r5, r6, pc}
+ 1270              	.LVL69:
+ 1271              	.L54:
+ 320:KeccakFW.c    ****     }
+ 1272              		.loc 1 320 9 is_stmt 1 view .LVU440
+ 320:KeccakFW.c    ****     }
+ 1273              		.loc 1 320 11 is_stmt 0 view .LVU441
+ 1274 0036 9D18     		adds	r5, r3, r2
+ 320:KeccakFW.c    ****     }
+ 1275              		.loc 1 320 15 view .LVU442
+ 1276 0038 865C     		ldrb	r6, [r0, r2]	@ zero_extendqisi2
+ 320:KeccakFW.c    ****     }
+ 1277              		.loc 1 320 11 view .LVU443
+ 1278 003a 95F8B440 		ldrb	r4, [r5, #180]	@ zero_extendqisi2
+ 320:KeccakFW.c    ****     }
+ 1279              		.loc 1 320 15 view .LVU444
+ 1280 003e 7440     		eors	r4, r4, r6
+ 1281 0040 85F8B440 		strb	r4, [r5, #180]
+ 318:KeccakFW.c    ****     {
+ 1282              		.loc 1 318 22 is_stmt 1 discriminator 3 view .LVU445
+ 1283 0044 0132     		adds	r2, r2, #1
+ 1284              	.LVL70:
+ 318:KeccakFW.c    ****     {
+ 1285              		.loc 1 318 22 is_stmt 0 discriminator 3 view .LVU446
+ 1286 0046 E6E7     		b	.L53
+ 1287              	.L57:
+ 1288              		.align	2
+ 1289              	.L56:
+ 1290 0048 00000000 		.word	.LANCHOR0
+ 1291              		.cfi_endproc
+ 1292              	.LFE15:
+ 1294              		.section	.text.mask_state,"ax",%progbits
+ 1295              		.align	1
+ 1296              		.global	mask_state
+ 1297              		.syntax unified
+ 1298              		.thumb
+ 1299              		.thumb_func
+ 1301              	mask_state:
+ 1302              	.LFB16:
+ 325:KeccakFW.c    **** 
+ 326:KeccakFW.c    **** void mask_state(void)
+ 327:KeccakFW.c    **** {
+ 1303              		.loc 1 327 1 is_stmt 1 view -0
+ 1304              		.cfi_startproc
+ 1305              		@ args = 0, pretend = 0, frame = 0
+ 1306              		@ frame_needed = 0, uses_anonymous_args = 0
+ 328:KeccakFW.c    ****     int i;
+ 1307              		.loc 1 328 5 view .LVU448
+ 329:KeccakFW.c    ****     for(i=0; i<200; i++)
+ 1308              		.loc 1 329 5 view .LVU449
+ 1309              	.LVL71:
+ 1310              		.loc 1 329 15 discriminator 1 view .LVU450
+ 327:KeccakFW.c    ****     int i;
+ 1311              		.loc 1 327 1 is_stmt 0 view .LVU451
+ 1312 0000 70B5     		push	{r4, r5, r6, lr}
+ 1313              	.LCFI13:
+ 1314              		.cfi_def_cfa_offset 16
+ 1315              		.cfi_offset 4, -16
+ 1316              		.cfi_offset 5, -12
+ 1317              		.cfi_offset 6, -8
+ 1318              		.cfi_offset 14, -4
+ 330:KeccakFW.c    ****     {
+ 331:KeccakFW.c    ****         s1[i] = prng_get_byte();
+ 1319              		.loc 1 331 15 discriminator 1 view .LVU452
+ 1320 0002 124E     		ldr	r6, .L63
+ 329:KeccakFW.c    ****     {
+ 1321              		.loc 1 329 10 view .LVU453
+ 1322 0004 0025     		movs	r5, #0
+ 1323              	.LVL72:
+ 1324              	.L62:
+ 1325              		.loc 1 331 9 is_stmt 1 view .LVU454
+ 1326              		.loc 1 331 17 is_stmt 0 view .LVU455
+ 1327 0006 FFF7FEFF 		bl	prng_get_byte
+ 1328              	.LVL73:
+ 1329              		.loc 1 331 15 discriminator 1 view .LVU456
+ 1330 000a 7419     		adds	r4, r6, r5
+ 1331 000c 84F87C01 		strb	r0, [r4, #380]
+ 332:KeccakFW.c    ****         s2[i] = prng_get_byte();
+ 1332              		.loc 1 332 9 is_stmt 1 view .LVU457
+ 1333              		.loc 1 332 17 is_stmt 0 view .LVU458
+ 1334 0010 FFF7FEFF 		bl	prng_get_byte
+ 1335              	.LVL74:
+ 1336              		.loc 1 332 15 discriminator 1 view .LVU459
+ 1337 0014 84F84402 		strb	r0, [r4, #580]
+ 333:KeccakFW.c    ****         if(i < 16)
+ 1338              		.loc 1 333 9 is_stmt 1 view .LVU460
+ 334:KeccakFW.c    ****         {
+ 335:KeccakFW.c    ****             s0[i] = s0[i] ^ s1[i] ^ s2[i] ^ initial_mask[i];
+ 1339              		.loc 1 335 23 is_stmt 0 view .LVU461
+ 1340 0018 94F8B420 		ldrb	r2, [r4, #180]	@ zero_extendqisi2
+ 1341              		.loc 1 335 31 view .LVU462
+ 1342 001c 94F87C01 		ldrb	r0, [r4, #380]	@ zero_extendqisi2
+ 1343              		.loc 1 335 39 view .LVU463
+ 1344 0020 94F84432 		ldrb	r3, [r4, #580]	@ zero_extendqisi2
+ 1345              		.loc 1 335 19 view .LVU464
+ 1346 0024 4240     		eors	r2, r2, r0
+ 333:KeccakFW.c    ****         if(i < 16)
+ 1347              		.loc 1 333 11 view .LVU465
+ 1348 0026 0F2D     		cmp	r5, #15
+ 1349              		.loc 1 335 19 view .LVU466
+ 1350 0028 83EA0203 		eor	r3, r3, r2
+ 1351 002c 05F10101 		add	r1, r5, #1
+ 333:KeccakFW.c    ****         if(i < 16)
+ 1352              		.loc 1 333 11 view .LVU467
+ 1353 0030 05DC     		bgt	.L59
+ 1354              		.loc 1 335 13 is_stmt 1 view .LVU468
+ 1355              		.loc 1 335 19 is_stmt 0 view .LVU469
+ 1356 0032 AA5D     		ldrb	r2, [r5, r6]	@ zero_extendqisi2
+ 1357 0034 5340     		eors	r3, r3, r2
+ 1358 0036 84F8B430 		strb	r3, [r4, #180]
+ 329:KeccakFW.c    ****     {
+ 1359              		.loc 1 329 22 is_stmt 1 discriminator 2 view .LVU470
+ 1360 003a 0D46     		mov	r5, r1
+ 1361              	.LVL75:
+ 329:KeccakFW.c    ****     {
+ 1362              		.loc 1 329 15 discriminator 1 view .LVU471
+ 1363 003c E3E7     		b	.L62
+ 1364              	.LVL76:
+ 1365              	.L59:
+ 336:KeccakFW.c    ****         }
+ 337:KeccakFW.c    ****         else
+ 338:KeccakFW.c    ****         {
+ 339:KeccakFW.c    ****             s0[i] = s0[i] ^ s1[i] ^ s2[i];
+ 1366              		.loc 1 339 13 view .LVU472
+ 329:KeccakFW.c    ****     {
+ 1367              		.loc 1 329 15 is_stmt 0 discriminator 1 view .LVU473
+ 1368 003e C829     		cmp	r1, #200
+ 1369              		.loc 1 339 19 view .LVU474
+ 1370 0040 84F8B430 		strb	r3, [r4, #180]
+ 329:KeccakFW.c    ****     {
+ 1371              		.loc 1 329 22 is_stmt 1 discriminator 2 view .LVU475
+ 1372 0044 0D46     		mov	r5, r1
+ 1373              	.LVL77:
+ 329:KeccakFW.c    ****     {
+ 1374              		.loc 1 329 15 discriminator 1 view .LVU476
+ 1375 0046 DED1     		bne	.L62
+ 340:KeccakFW.c    ****         }
+ 341:KeccakFW.c    ****     }
+ 342:KeccakFW.c    **** }
+ 1376              		.loc 1 342 1 is_stmt 0 view .LVU477
+ 1377 0048 70BD     		pop	{r4, r5, r6, pc}
+ 1378              	.L64:
+ 1379 004a 00BF     		.align	2
+ 1380              	.L63:
+ 1381 004c 00000000 		.word	.LANCHOR0
+ 1382              		.cfi_endproc
+ 1383              	.LFE16:
+ 1385              		.section	.text.get_pt,"ax",%progbits
+ 1386              		.align	1
+ 1387              		.global	get_pt
+ 1388              		.syntax unified
+ 1389              		.thumb
+ 1390              		.thumb_func
+ 1392              	get_pt:
+ 1393              	.LVL78:
+ 1394              	.LFB12:
+ 228:KeccakFW.c    ****     int i;
+ 1395              		.loc 1 228 1 is_stmt 1 view -0
+ 1396              		.cfi_startproc
+ 1397              		@ args = 0, pretend = 0, frame = 0
+ 1398              		@ frame_needed = 0, uses_anonymous_args = 0
+ 229:KeccakFW.c    ****     create_state(pt, len);
+ 1399              		.loc 1 229 5 view .LVU479
+ 230:KeccakFW.c    ****     mask_state();
+ 1400              		.loc 1 230 5 view .LVU480
+ 228:KeccakFW.c    ****     int i;
+ 1401              		.loc 1 228 1 is_stmt 0 view .LVU481
+ 1402 0000 F8B5     		push	{r3, r4, r5, r6, r7, lr}
+ 1403              	.LCFI14:
+ 1404              		.cfi_def_cfa_offset 24
+ 1405              		.cfi_offset 3, -24
+ 1406              		.cfi_offset 4, -20
+ 1407              		.cfi_offset 5, -16
+ 1408              		.cfi_offset 6, -12
+ 1409              		.cfi_offset 7, -8
+ 1410              		.cfi_offset 14, -4
+ 228:KeccakFW.c    ****     int i;
+ 1411              		.loc 1 228 1 view .LVU482
+ 1412 0002 0646     		mov	r6, r0
+ 230:KeccakFW.c    ****     mask_state();
+ 1413              		.loc 1 230 5 view .LVU483
+ 1414 0004 FFF7FEFF 		bl	create_state
+ 1415              	.LVL79:
+ 231:KeccakFW.c    ****     bit_interleave(s0, I0);
+ 1416              		.loc 1 231 5 is_stmt 1 view .LVU484
+ 1417 0008 FFF7FEFF 		bl	mask_state
+ 1418              	.LVL80:
+ 232:KeccakFW.c    ****     bit_interleave(s1, I1);
+ 1419              		.loc 1 232 5 view .LVU485
+ 1420 000c 2849     		ldr	r1, .L68
+ 237:KeccakFW.c    ****         ISHARES[i+200] = I1[i];
+ 1421              		.loc 1 237 24 is_stmt 0 view .LVU486
+ 1422 000e 294C     		ldr	r4, .L68+4
+ 232:KeccakFW.c    ****     bit_interleave(s1, I1);
+ 1423              		.loc 1 232 5 view .LVU487
+ 1424 0010 A1F51670 		sub	r0, r1, #600
+ 1425 0014 FFF7FEFF 		bl	bit_interleave
+ 1426              	.LVL81:
+ 233:KeccakFW.c    ****     bit_interleave(s2, I2);
+ 1427              		.loc 1 233 5 is_stmt 1 view .LVU488
+ 1428 0018 2749     		ldr	r1, .L68+8
+ 1429 001a A1F51670 		sub	r0, r1, #600
+ 1430 001e FFF7FEFF 		bl	bit_interleave
+ 1431              	.LVL82:
+ 234:KeccakFW.c    ****     for(i=0; i<200; i++)
+ 1432              		.loc 1 234 5 view .LVU489
+ 1433 0022 2649     		ldr	r1, .L68+12
+ 1434 0024 A1F51670 		sub	r0, r1, #600
+ 1435 0028 FFF7FEFF 		bl	bit_interleave
+ 1436              	.LVL83:
+ 235:KeccakFW.c    ****     {
+ 1437              		.loc 1 235 5 view .LVU490
+ 235:KeccakFW.c    ****     {
+ 1438              		.loc 1 235 15 discriminator 1 view .LVU491
+ 235:KeccakFW.c    ****     {
+ 1439              		.loc 1 235 10 is_stmt 0 view .LVU492
+ 1440 002c 0023     		movs	r3, #0
+ 1441              	.LVL84:
+ 1442              	.L66:
+ 237:KeccakFW.c    ****         ISHARES[i+200] = I1[i];
+ 1443              		.loc 1 237 9 is_stmt 1 view .LVU493
+ 237:KeccakFW.c    ****         ISHARES[i+200] = I1[i];
+ 1444              		.loc 1 237 24 is_stmt 0 view .LVU494
+ 1445 002e E118     		adds	r1, r4, r3
+ 1446 0030 91F80C23 		ldrb	r2, [r1, #780]	@ zero_extendqisi2
+ 1447 0034 D2B2     		uxtb	r2, r2
+ 237:KeccakFW.c    ****         ISHARES[i+200] = I1[i];
+ 1448              		.loc 1 237 20 view .LVU495
+ 1449 0036 81F86425 		strb	r2, [r1, #1380]
+ 238:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 1450              		.loc 1 238 9 is_stmt 1 view .LVU496
+ 238:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 1451              		.loc 1 238 28 is_stmt 0 view .LVU497
+ 1452 003a 91F8D403 		ldrb	r0, [r1, #980]	@ zero_extendqisi2
+ 238:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 1453              		.loc 1 238 18 view .LVU498
+ 1454 003e 03F1C802 		add	r2, r3, #200
+ 238:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 1455              		.loc 1 238 24 view .LVU499
+ 1456 0042 2244     		add	r2, r2, r4
+ 238:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 1457              		.loc 1 238 28 view .LVU500
+ 1458 0044 C0B2     		uxtb	r0, r0
+ 238:KeccakFW.c    ****         ISHARES[i+400] = I2[i];
+ 1459              		.loc 1 238 24 view .LVU501
+ 1460 0046 82F86405 		strb	r0, [r2, #1380]
+ 239:KeccakFW.c    ****     }
+ 1461              		.loc 1 239 9 is_stmt 1 view .LVU502
+ 239:KeccakFW.c    ****     }
+ 1462              		.loc 1 239 28 is_stmt 0 view .LVU503
+ 1463 004a 91F89C14 		ldrb	r1, [r1, #1180]	@ zero_extendqisi2
+ 239:KeccakFW.c    ****     }
+ 1464              		.loc 1 239 18 view .LVU504
+ 1465 004e 03F5C872 		add	r2, r3, #400
+ 239:KeccakFW.c    ****     }
+ 1466              		.loc 1 239 24 view .LVU505
+ 1467 0052 2244     		add	r2, r2, r4
+ 235:KeccakFW.c    ****     {
+ 1468              		.loc 1 235 22 discriminator 3 view .LVU506
+ 1469 0054 0133     		adds	r3, r3, #1
+ 1470              	.LVL85:
+ 239:KeccakFW.c    ****     }
+ 1471              		.loc 1 239 28 view .LVU507
+ 1472 0056 C9B2     		uxtb	r1, r1
+ 235:KeccakFW.c    ****     {
+ 1473              		.loc 1 235 15 discriminator 1 view .LVU508
+ 1474 0058 C82B     		cmp	r3, #200
+ 239:KeccakFW.c    ****     }
+ 1475              		.loc 1 239 24 view .LVU509
+ 1476 005a 82F86415 		strb	r1, [r2, #1380]
+ 235:KeccakFW.c    ****     {
+ 1477              		.loc 1 235 22 is_stmt 1 discriminator 3 view .LVU510
+ 1478              	.LVL86:
+ 235:KeccakFW.c    ****     {
+ 1479              		.loc 1 235 15 discriminator 1 view .LVU511
+ 1480 005e E6D1     		bne	.L66
+ 241:KeccakFW.c    ****     *DWT_CYCCNT = 0; // reset the counter
+ 1481              		.loc 1 241 5 view .LVU512
+ 1482 0060 174D     		ldr	r5, .L68+16
+ 1483 0062 2A68     		ldr	r2, [r5]
+ 243:KeccakFW.c    ****     x = *DWT_CYCCNT;
+ 1484              		.loc 1 243 5 is_stmt 0 view .LVU513
+ 1485 0064 A968     		ldr	r1, [r5, #8]
+ 241:KeccakFW.c    ****     *DWT_CYCCNT = 0; // reset the counter
+ 1486              		.loc 1 241 5 view .LVU514
+ 1487 0066 1368     		ldr	r3, [r2]
+ 1488              	.LVL87:
+ 241:KeccakFW.c    ****     *DWT_CYCCNT = 0; // reset the counter
+ 1489              		.loc 1 241 16 view .LVU515
+ 1490 0068 43F08073 		orr	r3, r3, #16777216
+ 1491 006c 1360     		str	r3, [r2]
+ 242:KeccakFW.c    ****     *DWT_CONTROL |= 1 ; // enable the counter
+ 1492              		.loc 1 242 5 is_stmt 1 view .LVU516
+ 1493 006e 6A68     		ldr	r2, [r5, #4]
+ 242:KeccakFW.c    ****     *DWT_CONTROL |= 1 ; // enable the counter
+ 1494              		.loc 1 242 17 is_stmt 0 view .LVU517
+ 1495 0070 0027     		movs	r7, #0
+ 1496 0072 1760     		str	r7, [r2]
+ 243:KeccakFW.c    ****     x = *DWT_CYCCNT;
+ 1497              		.loc 1 243 5 is_stmt 1 view .LVU518
+ 1498 0074 0B68     		ldr	r3, [r1]
+ 243:KeccakFW.c    ****     x = *DWT_CYCCNT;
+ 1499              		.loc 1 243 18 is_stmt 0 view .LVU519
+ 1500 0076 43F00103 		orr	r3, r3, #1
+ 1501 007a 0B60     		str	r3, [r1]
+ 244:KeccakFW.c    ****     trigger_high();
+ 1502              		.loc 1 244 5 is_stmt 1 view .LVU520
+ 244:KeccakFW.c    ****     trigger_high();
+ 1503              		.loc 1 244 9 is_stmt 0 view .LVU521
+ 1504 007c 1368     		ldr	r3, [r2]
+ 244:KeccakFW.c    ****     trigger_high();
+ 1505              		.loc 1 244 7 view .LVU522
+ 1506 007e C4F8943A 		str	r3, [r4, #2708]
+ 245:KeccakFW.c    ****     KeccakF1600_StatePermute(ISHARES);
+ 1507              		.loc 1 245 5 is_stmt 1 view .LVU523
+ 1508 0082 FFF7FEFF 		bl	trigger_high
+ 1509              	.LVL88:
+ 246:KeccakFW.c    ****     trigger_low();
+ 1510              		.loc 1 246 5 view .LVU524
+ 1511 0086 0F48     		ldr	r0, .L68+20
+ 1512 0088 FFF7FEFF 		bl	KeccakF1600_StatePermute
+ 1513              	.LVL89:
+ 247:KeccakFW.c    ****     y = *DWT_CYCCNT;
+ 1514              		.loc 1 247 5 view .LVU525
+ 1515 008c FFF7FEFF 		bl	trigger_low
+ 1516              	.LVL90:
+ 248:KeccakFW.c    ****     delta = (y - x);
+ 1517              		.loc 1 248 5 view .LVU526
+ 248:KeccakFW.c    ****     delta = (y - x);
+ 1518              		.loc 1 248 9 is_stmt 0 view .LVU527
+ 1519 0090 6B68     		ldr	r3, [r5, #4]
+ 249:KeccakFW.c    **** 	simpleserial_put('r', 16, pt);
+ 1520              		.loc 1 249 16 view .LVU528
+ 1521 0092 D4F8942A 		ldr	r2, [r4, #2708]
+ 248:KeccakFW.c    ****     delta = (y - x);
+ 1522              		.loc 1 248 9 view .LVU529
+ 1523 0096 1B68     		ldr	r3, [r3]
+ 248:KeccakFW.c    ****     delta = (y - x);
+ 1524              		.loc 1 248 7 view .LVU530
+ 1525 0098 C4F8983A 		str	r3, [r4, #2712]
+ 249:KeccakFW.c    **** 	simpleserial_put('r', 16, pt);
+ 1526              		.loc 1 249 5 is_stmt 1 view .LVU531
+ 250:KeccakFW.c    **** 	return 0x00;
+ 1527              		.loc 1 250 2 is_stmt 0 view .LVU532
+ 1528 009c 1021     		movs	r1, #16
+ 249:KeccakFW.c    **** 	simpleserial_put('r', 16, pt);
+ 1529              		.loc 1 249 16 view .LVU533
+ 1530 009e 9B1A     		subs	r3, r3, r2
+ 250:KeccakFW.c    **** 	return 0x00;
+ 1531              		.loc 1 250 2 view .LVU534
+ 1532 00a0 7220     		movs	r0, #114
+ 1533 00a2 3246     		mov	r2, r6
+ 249:KeccakFW.c    **** 	simpleserial_put('r', 16, pt);
+ 1534              		.loc 1 249 11 view .LVU535
+ 1535 00a4 6360     		str	r3, [r4, #4]
+ 250:KeccakFW.c    **** 	return 0x00;
+ 1536              		.loc 1 250 2 is_stmt 1 view .LVU536
+ 1537 00a6 FFF7FEFF 		bl	simpleserial_put
+ 1538              	.LVL91:
+ 251:KeccakFW.c    **** }
+ 1539              		.loc 1 251 2 view .LVU537
+ 252:KeccakFW.c    **** 
+ 1540              		.loc 1 252 1 is_stmt 0 view .LVU538
+ 1541 00aa 3846     		mov	r0, r7
+ 1542 00ac F8BD     		pop	{r3, r4, r5, r6, r7, pc}
+ 1543              	.LVL92:
+ 1544              	.L69:
+ 252:KeccakFW.c    **** 
+ 1545              		.loc 1 252 1 view .LVU539
+ 1546 00ae 00BF     		.align	2
+ 1547              	.L68:
+ 1548 00b0 0C030000 		.word	.LANCHOR0+780
+ 1549 00b4 00000000 		.word	.LANCHOR0
+ 1550 00b8 D4030000 		.word	.LANCHOR0+980
+ 1551 00bc 9C040000 		.word	.LANCHOR0+1180
+ 1552 00c0 00000000 		.word	.LANCHOR1
+ 1553 00c4 64050000 		.word	.LANCHOR0+1380
+ 1554              		.cfi_endproc
+ 1555              	.LFE12:
+ 1557              		.section	.text.unmask_state,"ax",%progbits
+ 1558              		.align	1
+ 1559              		.global	unmask_state
+ 1560              		.syntax unified
+ 1561              		.thumb
+ 1562              		.thumb_func
+ 1564              	unmask_state:
+ 1565              	.LFB17:
+ 343:KeccakFW.c    **** 
+ 344:KeccakFW.c    **** void unmask_state(void)
+ 345:KeccakFW.c    **** {
+ 1566              		.loc 1 345 1 is_stmt 1 view -0
+ 1567              		.cfi_startproc
+ 1568              		@ args = 0, pretend = 0, frame = 0
+ 1569              		@ frame_needed = 0, uses_anonymous_args = 0
+ 346:KeccakFW.c    ****     int i;
+ 1570              		.loc 1 346 5 view .LVU541
+ 347:KeccakFW.c    ****     for(i=0; i<200; i++)
+ 1571              		.loc 1 347 5 view .LVU542
+ 1572              	.LVL93:
+ 1573              		.loc 1 347 15 discriminator 1 view .LVU543
+ 1574 0000 094A     		ldr	r2, .L73
+ 345:KeccakFW.c    ****     int i;
+ 1575              		.loc 1 345 1 is_stmt 0 view .LVU544
+ 1576 0002 30B5     		push	{r4, r5, lr}
+ 1577              	.LCFI15:
+ 1578              		.cfi_def_cfa_offset 12
+ 1579              		.cfi_offset 4, -12
+ 1580              		.cfi_offset 5, -8
+ 1581              		.cfi_offset 14, -4
+ 1582              		.loc 1 347 10 view .LVU545
+ 1583 0004 0023     		movs	r3, #0
+ 348:KeccakFW.c    ****     {
+ 349:KeccakFW.c    ****         rec[i] = s0[i] ^ s1[i] ^ s2[i]; 
+ 1584              		.loc 1 349 20 view .LVU546
+ 1585 0006 A2F69C25 		subw	r5, r2, #2716
+ 1586              	.LVL94:
+ 1587              	.L71:
+ 1588              		.loc 1 349 9 is_stmt 1 view .LVU547
+ 1589              		.loc 1 349 20 is_stmt 0 view .LVU548
+ 1590 000a E918     		adds	r1, r5, r3
+ 347:KeccakFW.c    ****     {
+ 1591              		.loc 1 347 22 discriminator 3 view .LVU549
+ 1592 000c 0133     		adds	r3, r3, #1
+ 1593              	.LVL95:
+ 1594              		.loc 1 349 20 view .LVU550
+ 1595 000e 91F8B400 		ldrb	r0, [r1, #180]	@ zero_extendqisi2
+ 1596              		.loc 1 349 28 view .LVU551
+ 1597 0012 91F87C41 		ldrb	r4, [r1, #380]	@ zero_extendqisi2
+ 1598              		.loc 1 349 36 view .LVU552
+ 1599 0016 91F84412 		ldrb	r1, [r1, #580]	@ zero_extendqisi2
+ 1600              		.loc 1 349 16 view .LVU553
+ 1601 001a 6040     		eors	r0, r0, r4
+ 1602 001c 4140     		eors	r1, r1, r0
+ 347:KeccakFW.c    ****     {
+ 1603              		.loc 1 347 15 discriminator 1 view .LVU554
+ 1604 001e C82B     		cmp	r3, #200
+ 1605              		.loc 1 349 16 view .LVU555
+ 1606 0020 02F8011B 		strb	r1, [r2], #1
+ 347:KeccakFW.c    ****     {
+ 1607              		.loc 1 347 22 is_stmt 1 discriminator 3 view .LVU556
+ 1608              	.LVL96:
+ 347:KeccakFW.c    ****     {
+ 1609              		.loc 1 347 15 discriminator 1 view .LVU557
+ 1610 0024 F1D1     		bne	.L71
+ 350:KeccakFW.c    ****     }
+ 351:KeccakFW.c    **** }
+ 1611              		.loc 1 351 1 is_stmt 0 view .LVU558
+ 1612 0026 30BD     		pop	{r4, r5, pc}
+ 1613              	.L74:
+ 1614              		.align	2
+ 1615              	.L73:
+ 1616 0028 9C0A0000 		.word	.LANCHOR0+2716
+ 1617              		.cfi_endproc
+ 1618              	.LFE17:
+ 1620              		.section	.text.get_res,"ax",%progbits
+ 1621              		.align	1
+ 1622              		.global	get_res
+ 1623              		.syntax unified
+ 1624              		.thumb
+ 1625              		.thumb_func
+ 1627              	get_res:
+ 1628              	.LVL97:
+ 1629              	.LFB13:
+ 256:KeccakFW.c    ****     int j, i;
+ 1630              		.loc 1 256 1 is_stmt 1 view -0
+ 1631              		.cfi_startproc
+ 1632              		@ args = 0, pretend = 0, frame = 8
+ 1633              		@ frame_needed = 0, uses_anonymous_args = 0
+ 257:KeccakFW.c    ****     uint8_t bytes_st_msg[8];
+ 1634              		.loc 1 257 5 view .LVU560
+ 258:KeccakFW.c    **** 
+ 1635              		.loc 1 258 5 view .LVU561
+ 260:KeccakFW.c    ****     {
+ 1636              		.loc 1 260 5 view .LVU562
+ 260:KeccakFW.c    ****     {
+ 1637              		.loc 1 260 15 discriminator 1 view .LVU563
+ 256:KeccakFW.c    ****     int j, i;
+ 1638              		.loc 1 256 1 is_stmt 0 view .LVU564
+ 1639 0000 73B5     		push	{r0, r1, r4, r5, r6, lr}
+ 1640              	.LCFI16:
+ 1641              		.cfi_def_cfa_offset 24
+ 1642              		.cfi_offset 4, -16
+ 1643              		.cfi_offset 5, -12
+ 1644              		.cfi_offset 6, -8
+ 1645              		.cfi_offset 14, -4
+ 262:KeccakFW.c    ****         I1[i] = ISHARES[i+200];
+ 1646              		.loc 1 262 24 view .LVU565
+ 1647 0002 224C     		ldr	r4, .L78
+ 256:KeccakFW.c    ****     int j, i;
+ 1648              		.loc 1 256 1 view .LVU566
+ 1649 0004 0646     		mov	r6, r0
+ 260:KeccakFW.c    ****     {
+ 1650              		.loc 1 260 10 view .LVU567
+ 1651 0006 0025     		movs	r5, #0
+ 1652              	.LVL98:
+ 1653              	.L76:
+ 262:KeccakFW.c    ****         I1[i] = ISHARES[i+200];
+ 1654              		.loc 1 262 9 is_stmt 1 view .LVU568
+ 262:KeccakFW.c    ****         I1[i] = ISHARES[i+200];
+ 1655              		.loc 1 262 24 is_stmt 0 view .LVU569
+ 1656 0008 6319     		adds	r3, r4, r5
+ 1657 000a 93F86425 		ldrb	r2, [r3, #1380]	@ zero_extendqisi2
+ 1658 000e D2B2     		uxtb	r2, r2
+ 262:KeccakFW.c    ****         I1[i] = ISHARES[i+200];
+ 1659              		.loc 1 262 15 view .LVU570
+ 1660 0010 83F80C23 		strb	r2, [r3, #780]
+ 263:KeccakFW.c    ****         I2[i] = ISHARES[i+400];
+ 1661              		.loc 1 263 9 is_stmt 1 view .LVU571
+ 263:KeccakFW.c    ****         I2[i] = ISHARES[i+400];
+ 1662              		.loc 1 263 26 is_stmt 0 view .LVU572
+ 1663 0014 05F1C802 		add	r2, r5, #200
+ 263:KeccakFW.c    ****         I2[i] = ISHARES[i+400];
+ 1664              		.loc 1 263 24 view .LVU573
+ 1665 0018 2244     		add	r2, r2, r4
+ 1666 001a 92F86425 		ldrb	r2, [r2, #1380]	@ zero_extendqisi2
+ 1667 001e D2B2     		uxtb	r2, r2
+ 263:KeccakFW.c    ****         I2[i] = ISHARES[i+400];
+ 1668              		.loc 1 263 15 view .LVU574
+ 1669 0020 83F8D423 		strb	r2, [r3, #980]
+ 264:KeccakFW.c    ****     }
+ 1670              		.loc 1 264 9 is_stmt 1 view .LVU575
+ 264:KeccakFW.c    ****     }
+ 1671              		.loc 1 264 26 is_stmt 0 view .LVU576
+ 1672 0024 05F5C872 		add	r2, r5, #400
+ 264:KeccakFW.c    ****     }
+ 1673              		.loc 1 264 24 view .LVU577
+ 1674 0028 2244     		add	r2, r2, r4
+ 260:KeccakFW.c    ****     {
+ 1675              		.loc 1 260 22 discriminator 3 view .LVU578
+ 1676 002a 0135     		adds	r5, r5, #1
+ 1677              	.LVL99:
+ 264:KeccakFW.c    ****     }
+ 1678              		.loc 1 264 24 view .LVU579
+ 1679 002c 92F86425 		ldrb	r2, [r2, #1380]	@ zero_extendqisi2
+ 260:KeccakFW.c    ****     {
+ 1680              		.loc 1 260 15 discriminator 1 view .LVU580
+ 1681 0030 C82D     		cmp	r5, #200
+ 264:KeccakFW.c    ****     }
+ 1682              		.loc 1 264 24 view .LVU581
+ 1683 0032 D2B2     		uxtb	r2, r2
+ 264:KeccakFW.c    ****     }
+ 1684              		.loc 1 264 15 view .LVU582
+ 1685 0034 83F89C24 		strb	r2, [r3, #1180]
+ 260:KeccakFW.c    ****     {
+ 1686              		.loc 1 260 22 is_stmt 1 discriminator 3 view .LVU583
+ 1687              	.LVL100:
+ 260:KeccakFW.c    ****     {
+ 1688              		.loc 1 260 15 discriminator 1 view .LVU584
+ 1689 0038 E6D1     		bne	.L76
+ 266:KeccakFW.c    ****     bit_deinterleave(I1,s1);
+ 1690              		.loc 1 266 5 view .LVU585
+ 1691 003a 1549     		ldr	r1, .L78+4
+ 1692              	.LVL101:
+ 266:KeccakFW.c    ****     bit_deinterleave(I1,s1);
+ 1693              		.loc 1 266 5 is_stmt 0 view .LVU586
+ 1694 003c 01F51670 		add	r0, r1, #600
+ 1695              	.LVL102:
+ 266:KeccakFW.c    ****     bit_deinterleave(I1,s1);
+ 1696              		.loc 1 266 5 view .LVU587
+ 1697 0040 FFF7FEFF 		bl	bit_deinterleave
+ 1698              	.LVL103:
+ 267:KeccakFW.c    ****     bit_deinterleave(I2,s2);
+ 1699              		.loc 1 267 5 is_stmt 1 view .LVU588
+ 1700 0044 1349     		ldr	r1, .L78+8
+ 1701 0046 01F51670 		add	r0, r1, #600
+ 1702 004a FFF7FEFF 		bl	bit_deinterleave
+ 1703              	.LVL104:
+ 268:KeccakFW.c    ****     
+ 1704              		.loc 1 268 5 view .LVU589
+ 1705 004e 1249     		ldr	r1, .L78+12
+ 1706 0050 01F51670 		add	r0, r1, #600
+ 1707 0054 FFF7FEFF 		bl	bit_deinterleave
+ 1708              	.LVL105:
+ 270:KeccakFW.c    ****     for(i=0;i<25;i++)
+ 1709              		.loc 1 270 5 view .LVU590
+ 1710 0058 FFF7FEFF 		bl	unmask_state
+ 1711              	.LVL106:
+ 271:KeccakFW.c    ****     {
+ 1712              		.loc 1 271 5 view .LVU591
+ 271:KeccakFW.c    ****     {
+ 1713              		.loc 1 271 14 discriminator 1 view .LVU592
+ 275:KeccakFW.c    ****         }
+ 1714              		.loc 1 275 28 is_stmt 0 view .LVU593
+ 1715 005c 0F49     		ldr	r1, .L78+16
+ 1716 005e 2A46     		mov	r2, r5
+ 1717 0060 01F1C800 		add	r0, r1, #200
+ 1718 0064 FFF7FEFF 		bl	memcpy
+ 1719              	.LVL107:
+ 279:KeccakFW.c    ****     for(j=0;j<8;j++)
+ 1720              		.loc 1 279 5 is_stmt 1 view .LVU594
+ 280:KeccakFW.c    ****     {
+ 1721              		.loc 1 280 5 view .LVU595
+ 280:KeccakFW.c    ****     {
+ 1722              		.loc 1 280 14 discriminator 1 view .LVU596
+ 282:KeccakFW.c    ****     }    
+ 1723              		.loc 1 282 25 is_stmt 0 view .LVU597
+ 1724 0068 3378     		ldrb	r3, [r6]	@ zero_extendqisi2
+ 1725              	.LVL108:
+ 282:KeccakFW.c    ****     }    
+ 1726              		.loc 1 282 25 view .LVU598
+ 1727 006a 04EBC304 		add	r4, r4, r3, lsl #3
+ 1728 006e 6B46     		mov	r3, sp
+ 1729              	.LVL109:
+ 282:KeccakFW.c    ****     }    
+ 1730              		.loc 1 282 25 view .LVU599
+ 1731 0070 D4F8640B 		ldr	r0, [r4, #2916]	@ unaligned
+ 1732 0074 D4F8681B 		ldr	r1, [r4, #2920]	@ unaligned
+ 285:KeccakFW.c    **** 	return 0x00;
+ 1733              		.loc 1 285 5 view .LVU600
+ 1734 0078 6A46     		mov	r2, sp
+ 282:KeccakFW.c    ****     }    
+ 1735              		.loc 1 282 25 view .LVU601
+ 1736 007a 03C3     		stmia	r3!, {r0, r1}
+ 1737              	.LVL110:
+ 285:KeccakFW.c    **** 	return 0x00;
+ 1738              		.loc 1 285 5 is_stmt 1 view .LVU602
+ 1739 007c 0821     		movs	r1, #8
+ 1740 007e 6D20     		movs	r0, #109
+ 1741 0080 FFF7FEFF 		bl	simpleserial_put
+ 1742              	.LVL111:
+ 286:KeccakFW.c    **** }
+ 1743              		.loc 1 286 2 view .LVU603
+ 287:KeccakFW.c    **** 
+ 1744              		.loc 1 287 1 is_stmt 0 view .LVU604
+ 1745 0084 0020     		movs	r0, #0
+ 1746 0086 02B0     		add	sp, sp, #8
+ 1747              	.LCFI17:
+ 1748              		.cfi_def_cfa_offset 16
+ 1749              		@ sp needed
+ 1750 0088 70BD     		pop	{r4, r5, r6, pc}
+ 1751              	.LVL112:
+ 1752              	.L79:
+ 287:KeccakFW.c    **** 
+ 1753              		.loc 1 287 1 view .LVU605
+ 1754 008a 00BF     		.align	2
+ 1755              	.L78:
+ 1756 008c 00000000 		.word	.LANCHOR0
+ 1757 0090 B4000000 		.word	.LANCHOR0+180
+ 1758 0094 7C010000 		.word	.LANCHOR0+380
+ 1759 0098 44020000 		.word	.LANCHOR0+580
+ 1760 009c 9C0A0000 		.word	.LANCHOR0+2716
+ 1761              		.cfi_endproc
+ 1762              	.LFE13:
+ 1764              		.section	.text.startup.main,"ax",%progbits
+ 1765              		.align	1
+ 1766              		.global	main
+ 1767              		.syntax unified
+ 1768              		.thumb
+ 1769              		.thumb_func
+ 1771              	main:
+ 1772              	.LFB18:
+ 352:KeccakFW.c    **** 
+ 353:KeccakFW.c    **** 
+ 354:KeccakFW.c    **** 
+ 355:KeccakFW.c    **** // ***************************************************************************
+ 356:KeccakFW.c    **** // ************************************ MAIN *********************************
+ 357:KeccakFW.c    **** // ***************************************************************************
+ 358:KeccakFW.c    **** 
+ 359:KeccakFW.c    **** int main(void) 
+ 360:KeccakFW.c    **** {
+ 1773              		.loc 1 360 1 is_stmt 1 view -0
+ 1774              		.cfi_startproc
+ 1775              		@ Volatile: function does not return.
+ 1776              		@ args = 0, pretend = 0, frame = 0
+ 1777              		@ frame_needed = 0, uses_anonymous_args = 0
+ 361:KeccakFW.c    ****     platform_init();
+ 1778              		.loc 1 361 5 view .LVU607
+ 360:KeccakFW.c    ****     platform_init();
+ 1779              		.loc 1 360 1 is_stmt 0 view .LVU608
+ 1780 0000 08B5     		push	{r3, lr}
+ 1781              	.LCFI18:
+ 1782              		.cfi_def_cfa_offset 8
+ 1783              		.cfi_offset 3, -8
+ 1784              		.cfi_offset 14, -4
+ 1785              		.loc 1 361 5 view .LVU609
+ 1786 0002 FFF7FEFF 		bl	platform_init
+ 1787              	.LVL113:
+ 362:KeccakFW.c    ****     init_uart();
+ 1788              		.loc 1 362 5 is_stmt 1 view .LVU610
+ 1789 0006 FFF7FEFF 		bl	init_uart
+ 1790              	.LVL114:
+ 363:KeccakFW.c    ****     trigger_setup();
+ 1791              		.loc 1 363 5 view .LVU611
+ 1792 000a FFF7FEFF 		bl	trigger_setup
+ 1793              	.LVL115:
+ 364:KeccakFW.c    ****     simpleserial_init();
+ 1794              		.loc 1 364 5 view .LVU612
+ 1795 000e FFF7FEFF 		bl	simpleserial_init
+ 1796              	.LVL116:
+ 365:KeccakFW.c    ****     simpleserial_addcmd('p', 16,  get_pt);
+ 1797              		.loc 1 365 5 view .LVU613
+ 1798 0012 0E4A     		ldr	r2, .L82
+ 1799 0014 1021     		movs	r1, #16
+ 1800 0016 7020     		movs	r0, #112
+ 1801 0018 FFF7FEFF 		bl	simpleserial_addcmd
+ 1802              	.LVL117:
+ 366:KeccakFW.c    ****     simpleserial_addcmd('r', 16, get_res);
+ 1803              		.loc 1 366 5 view .LVU614
+ 1804 001c 0C4A     		ldr	r2, .L82+4
+ 1805 001e 1021     		movs	r1, #16
+ 1806 0020 7220     		movs	r0, #114
+ 1807 0022 FFF7FEFF 		bl	simpleserial_addcmd
+ 1808              	.LVL118:
+ 367:KeccakFW.c    ****     simpleserial_addcmd('s', 16, get_seed);
+ 1809              		.loc 1 367 5 view .LVU615
+ 1810 0026 0B4A     		ldr	r2, .L82+8
+ 1811 0028 1021     		movs	r1, #16
+ 1812 002a 7320     		movs	r0, #115
+ 1813 002c FFF7FEFF 		bl	simpleserial_addcmd
+ 1814              	.LVL119:
+ 368:KeccakFW.c    ****     simpleserial_addcmd('k', 16, get_mask);
+ 1815              		.loc 1 368 5 view .LVU616
+ 1816 0030 094A     		ldr	r2, .L82+12
+ 1817 0032 1021     		movs	r1, #16
+ 1818 0034 6B20     		movs	r0, #107
+ 1819 0036 FFF7FEFF 		bl	simpleserial_addcmd
+ 1820              	.LVL120:
+ 369:KeccakFW.c    ****     simpleserial_addcmd('c', 1, get_cycles);
+ 1821              		.loc 1 369 5 view .LVU617
+ 1822 003a 084A     		ldr	r2, .L82+16
+ 1823 003c 0121     		movs	r1, #1
+ 1824 003e 6320     		movs	r0, #99
+ 1825 0040 FFF7FEFF 		bl	simpleserial_addcmd
+ 1826              	.LVL121:
+ 1827              	.L81:
+ 370:KeccakFW.c    **** 
+ 371:KeccakFW.c    ****     while(1)
+ 1828              		.loc 1 371 5 view .LVU618
+ 372:KeccakFW.c    ****     {
+ 373:KeccakFW.c    ****         simpleserial_get();
+ 1829              		.loc 1 373 9 discriminator 1 view .LVU619
+ 1830 0044 FFF7FEFF 		bl	simpleserial_get
+ 1831              	.LVL122:
+ 371:KeccakFW.c    ****     {
+ 1832              		.loc 1 371 10 view .LVU620
+ 1833 0048 FCE7     		b	.L81
+ 1834              	.L83:
+ 1835 004a 00BF     		.align	2
+ 1836              	.L82:
+ 1837 004c 00000000 		.word	get_pt
+ 1838 0050 00000000 		.word	get_res
+ 1839 0054 00000000 		.word	get_seed
+ 1840 0058 00000000 		.word	get_mask
+ 1841 005c 00000000 		.word	get_cycles
+ 1842              		.cfi_endproc
+ 1843              	.LFE18:
+ 1845              		.global	prng_state
+ 1846              		.global	seed_counter
+ 1847              		.global	num_cycles_bytes
+ 1848              		.global	delta
+ 1849              		.global	y
+ 1850              		.global	x
+ 1851              		.global	SCB_DEMCR
+ 1852              		.global	DWT_CONTROL
+ 1853              		.global	DWT_CYCCNT
+ 1854              		.global	pt_marker
+ 1855              		.global	bytes_st
+ 1856              		.global	rec_d
+ 1857              		.global	rec
+ 1858              		.global	n
+ 1859              		.global	ISHARES
+ 1860              		.global	I2
+ 1861              		.global	s2
+ 1862              		.global	I1
+ 1863              		.global	s1
+ 1864              		.global	I0
+ 1865              		.global	s0
+ 1866              		.global	initial_mask
+ 1867              		.global	seed_chacha20
+ 1868              		.data
+ 1869              		.align	2
+ 1870              		.set	.LANCHOR1,. + 0
+ 1873              	SCB_DEMCR:
+ 1874 0000 FCED00E0 		.word	-536809988
+ 1877              	DWT_CYCCNT:
+ 1878 0004 041000E0 		.word	-536866812
+ 1881              	DWT_CONTROL:
+ 1882 0008 001000E0 		.word	-536866816
+ 1885              	n:
+ 1886 000c 32000000 		.word	50
+ 1887              		.bss
+ 1888              		.align	2
+ 1889              		.set	.LANCHOR0,. + 0
+ 1892              	initial_mask:
+ 1893 0000 0000     		.space	2
+ 1894 0002 0000     		.space	2
+ 1897              	delta:
+ 1898 0004 00000000 		.space	4
+ 1901              	num_cycles_bytes:
+ 1902 0008 00000000 		.space	4
+ 1905              	prng:
+ 1906 000c 00000000 		.space	132
+ 1906      00000000 
+ 1906      00000000 
+ 1906      00000000 
+ 1906      00000000 
+ 1909              	seed_counter:
+ 1910 0090 00000000 		.space	4
+ 1913              	seed_chacha20:
+ 1914 0094 00000000 		.space	32
+ 1914      00000000 
+ 1914      00000000 
+ 1914      00000000 
+ 1914      00000000 
+ 1917              	s0:
+ 1918 00b4 00000000 		.space	200
+ 1918      00000000 
+ 1918      00000000 
+ 1918      00000000 
+ 1918      00000000 
+ 1921              	s1:
+ 1922 017c 00000000 		.space	200
+ 1922      00000000 
+ 1922      00000000 
+ 1922      00000000 
+ 1922      00000000 
+ 1925              	s2:
+ 1926 0244 00000000 		.space	200
+ 1926      00000000 
+ 1926      00000000 
+ 1926      00000000 
+ 1926      00000000 
+ 1929              	I0:
+ 1930 030c 00000000 		.space	200
+ 1930      00000000 
+ 1930      00000000 
+ 1930      00000000 
+ 1930      00000000 
+ 1933              	I1:
+ 1934 03d4 00000000 		.space	200
+ 1934      00000000 
+ 1934      00000000 
+ 1934      00000000 
+ 1934      00000000 
+ 1937              	I2:
+ 1938 049c 00000000 		.space	200
+ 1938      00000000 
+ 1938      00000000 
+ 1938      00000000 
+ 1938      00000000 
+ 1941              	ISHARES:
+ 1942 0564 00000000 		.space	1328
+ 1942      00000000 
+ 1942      00000000 
+ 1942      00000000 
+ 1942      00000000 
+ 1945              	x:
+ 1946 0a94 00000000 		.space	4
+ 1949              	y:
+ 1950 0a98 00000000 		.space	4
+ 1953              	rec:
+ 1954 0a9c 00000000 		.space	200
+ 1954      00000000 
+ 1954      00000000 
+ 1954      00000000 
+ 1954      00000000 
+ 1957              	bytes_st:
+ 1958 0b64 00000000 		.space	200
+ 1958      00000000 
+ 1958      00000000 
+ 1958      00000000 
+ 1958      00000000 
+ 1961              	prng_state:
+ 1962 0c2c 00000000 		.space	4
+ 1965              	pt_marker:
+ 1966 0c30 00000000 		.space	16
+ 1966      00000000 
+ 1966      00000000 
+ 1966      00000000 
+ 1969              	rec_d:
+ 1970 0c40 00000000 		.space	200
+ 1970      00000000 
+ 1970      00000000 
+ 1970      00000000 
+ 1970      00000000 
+ 1971              		.text
+ 1972              	.Letext0:
+ 1973              		.file 2 "/usr/lib/gcc/arm-none-eabi/13.2.1/include/stddef.h"
+ 1974              		.file 3 "/usr/lib/gcc/arm-none-eabi/13.2.1/include/stdint.h"
+ 1975              		.file 4 "../.././simpleserial/simpleserial.h"
+ 1976              		.file 5 "/usr/include/newlib/string.h"
+ 1977              		.file 6 "<built-in>"
+DEFINED SYMBOLS
+                            *ABS*:00000000 KeccakFW.c
+     /tmp/cc5DFFlR.s:19     .text.get_mask:00000000 $t
+     /tmp/cc5DFFlR.s:25     .text.get_mask:00000000 get_mask
+     /tmp/cc5DFFlR.s:67     .text.get_mask:00000024 $d
+     /tmp/cc5DFFlR.s:72     .text.get_cycles:00000000 $t
+     /tmp/cc5DFFlR.s:78     .text.get_cycles:00000000 get_cycles
+     /tmp/cc5DFFlR.s:128    .text.get_cycles:00000024 $d
+     /tmp/cc5DFFlR.s:133    .text.prng_init:00000000 $t
+     /tmp/cc5DFFlR.s:139    .text.prng_init:00000000 prng_init
+     /tmp/cc5DFFlR.s:226    .text.prng_init:00000058 $d
+     /tmp/cc5DFFlR.s:234    .text.get_seed:00000000 $t
+     /tmp/cc5DFFlR.s:240    .text.get_seed:00000000 get_seed
+     /tmp/cc5DFFlR.s:314    .text.get_seed:0000004c $d
+     /tmp/cc5DFFlR.s:320    .text.prng_get_byte:00000000 $t
+     /tmp/cc5DFFlR.s:326    .text.prng_get_byte:00000000 prng_get_byte
+     /tmp/cc5DFFlR.s:727    .text.prng_get_byte:00000208 $d
+     /tmp/cc5DFFlR.s:733    .text.rand_share_64:00000000 $t
+     /tmp/cc5DFFlR.s:739    .text.rand_share_64:00000000 rand_share_64
+     /tmp/cc5DFFlR.s:804    .text.bit_interleave:00000000 $t
+     /tmp/cc5DFFlR.s:810    .text.bit_interleave:00000000 bit_interleave
+     /tmp/cc5DFFlR.s:994    .text.bit_deinterleave:00000000 $t
+     /tmp/cc5DFFlR.s:1000   .text.bit_deinterleave:00000000 bit_deinterleave
+     /tmp/cc5DFFlR.s:1195   .text.create_state:00000000 $t
+     /tmp/cc5DFFlR.s:1201   .text.create_state:00000000 create_state
+     /tmp/cc5DFFlR.s:1290   .text.create_state:00000048 $d
+     /tmp/cc5DFFlR.s:1295   .text.mask_state:00000000 $t
+     /tmp/cc5DFFlR.s:1301   .text.mask_state:00000000 mask_state
+     /tmp/cc5DFFlR.s:1381   .text.mask_state:0000004c $d
+     /tmp/cc5DFFlR.s:1386   .text.get_pt:00000000 $t
+     /tmp/cc5DFFlR.s:1392   .text.get_pt:00000000 get_pt
+     /tmp/cc5DFFlR.s:1548   .text.get_pt:000000b0 $d
+     /tmp/cc5DFFlR.s:1558   .text.unmask_state:00000000 $t
+     /tmp/cc5DFFlR.s:1564   .text.unmask_state:00000000 unmask_state
+     /tmp/cc5DFFlR.s:1616   .text.unmask_state:00000028 $d
+     /tmp/cc5DFFlR.s:1621   .text.get_res:00000000 $t
+     /tmp/cc5DFFlR.s:1627   .text.get_res:00000000 get_res
+     /tmp/cc5DFFlR.s:1756   .text.get_res:0000008c $d
+     /tmp/cc5DFFlR.s:1765   .text.startup.main:00000000 $t
+     /tmp/cc5DFFlR.s:1771   .text.startup.main:00000000 main
+     /tmp/cc5DFFlR.s:1837   .text.startup.main:0000004c $d
+     /tmp/cc5DFFlR.s:1961   .bss:00000c2c prng_state
+     /tmp/cc5DFFlR.s:1909   .bss:00000090 seed_counter
+     /tmp/cc5DFFlR.s:1901   .bss:00000008 num_cycles_bytes
+     /tmp/cc5DFFlR.s:1897   .bss:00000004 delta
+     /tmp/cc5DFFlR.s:1949   .bss:00000a98 y
+     /tmp/cc5DFFlR.s:1945   .bss:00000a94 x
+     /tmp/cc5DFFlR.s:1873   .data:00000000 SCB_DEMCR
+     /tmp/cc5DFFlR.s:1881   .data:00000008 DWT_CONTROL
+     /tmp/cc5DFFlR.s:1877   .data:00000004 DWT_CYCCNT
+     /tmp/cc5DFFlR.s:1965   .bss:00000c30 pt_marker
+     /tmp/cc5DFFlR.s:1957   .bss:00000b64 bytes_st
+     /tmp/cc5DFFlR.s:1969   .bss:00000c40 rec_d
+     /tmp/cc5DFFlR.s:1953   .bss:00000a9c rec
+     /tmp/cc5DFFlR.s:1885   .data:0000000c n
+     /tmp/cc5DFFlR.s:1941   .bss:00000564 ISHARES
+     /tmp/cc5DFFlR.s:1937   .bss:0000049c I2
+     /tmp/cc5DFFlR.s:1925   .bss:00000244 s2
+     /tmp/cc5DFFlR.s:1933   .bss:000003d4 I1
+     /tmp/cc5DFFlR.s:1921   .bss:0000017c s1
+     /tmp/cc5DFFlR.s:1929   .bss:0000030c I0
+     /tmp/cc5DFFlR.s:1917   .bss:000000b4 s0
+     /tmp/cc5DFFlR.s:1892   .bss:00000000 initial_mask
+     /tmp/cc5DFFlR.s:1913   .bss:00000094 seed_chacha20
+     /tmp/cc5DFFlR.s:1869   .data:00000000 $d
+     /tmp/cc5DFFlR.s:1888   .bss:00000000 $d
+     /tmp/cc5DFFlR.s:1905   .bss:0000000c prng
+
+UNDEFINED SYMBOLS
+simpleserial_put
+trigger_high
+KeccakF1600_StatePermute
+trigger_low
+memcpy
+platform_init
+init_uart
+trigger_setup
+simpleserial_init
+simpleserial_addcmd
+simpleserial_get
